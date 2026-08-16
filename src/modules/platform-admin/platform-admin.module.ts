@@ -4,6 +4,7 @@ import { AuditModule } from '@/modules/audit/audit.module';
 import { MailModule } from '@/libs/mail/mail.module';
 import { OtpService } from '@/libs/otp/otp.service';
 import { SessionModule } from '@/modules/session/session.module';
+import { OAuthModule } from '@/modules/oauth/oauth.module';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminClientsController } from './admin-clients.controller';
 import { AdminLoginRateLimiterService } from './admin-login-rate-limiter.service';
@@ -16,7 +17,7 @@ import { PlatformAdminLocalAuthRepository } from './platform-admin-local-auth.re
 import { PlatformAdminRepository } from './platform-admin.repository';
 
 @Module({
-  imports: [AuditModule, MailModule, SessionModule, JwtModule.register({})],
+  imports: [AuditModule, MailModule, SessionModule, OAuthModule, JwtModule.register({})],
   controllers: [AdminAuthController, AdminClientsController],
   providers: [
     PlatformAdminRepository,

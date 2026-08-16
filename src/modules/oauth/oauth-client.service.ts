@@ -171,6 +171,51 @@ export class OAuthClientService {
     return updated;
   }
 
+  async enable(id: string): Promise<TOAuthClient> {
+    const updated = await this.oauthClientRepository.update(id, {
+      status: OAuthClientStatusEnum.ACTIVE,
+    });
+
+    if (!updated) {
+      throw new OAuthClientNotFoundError();
+    }
+
+    return updated;
+  }
+
+  async findById(id: string): Promise<TOAuthClientWithUris> {
+    const client = await this.oauthClientRepository.findByIdWithUris(id);
+
+    if (!client) {
+      throw new OAuthClientNotFoundError();
+    }
+
+    return client;
+  }
+
+  async list(options: {
+    page: number;
+    limit: number;
+    status?: (typeof OAuthClientStatusEnum)[keyof typeof OAuthClientStatusEnum];
+  }): Promise<{ items: TOAuthClient[]; total: number; page: number; limit: number }> {
+    const offset = (options.page - 1) * options.limit;
+    const [items, total] = await Promise.all([
+      this.oauthClientRepository.list({
+        limit: options.limit,
+        offset,
+        status: options.status,
+      }),
+      this.oauthClientRepository.count(options.status),
+    ]);
+
+    return {
+      items,
+      total,
+      page: options.page,
+      limit: options.limit,
+    };
+  }
+
   async findByClientId(clientId: string): Promise<TOAuthClientWithUris | null> {
     const client = await this.oauthClientRepository.findByClientId(clientId);
     if (!client) {

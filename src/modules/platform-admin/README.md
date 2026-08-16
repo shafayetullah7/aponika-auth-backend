@@ -17,9 +17,12 @@ Not the Byte Forge marketplace admin (`byte-forge-admin`).
 | `GET` | `/api/v1/admin/auth/check` |
 | `POST` | `/api/v1/admin/auth/refresh` |
 | `POST` | `/api/v1/admin/auth/logout` |
-| `GET` | `/api/v1/admin/clients` (stub — guard test) |
-
-OAuth client CRUD in F7.
+| `GET` | `/api/v1/admin/clients` |
+| `GET` | `/api/v1/admin/clients/:id` |
+| `POST` | `/api/v1/admin/clients` |
+| `PATCH` | `/api/v1/admin/clients/:id` |
+| `POST` | `/api/v1/admin/clients/:id/disable` |
+| `POST` | `/api/v1/admin/clients/:id/enable` |
 
 | Table | Purpose |
 |-------|---------|

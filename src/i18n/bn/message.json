@@ -19,6 +19,12 @@
     "adminLoggedIn": "অ্যাডমিন সফলভাবে লগ ইন হয়েছে",
     "adminAuthenticated": "অ্যাডমিন প্রমাণিত",
     "adminTokenRefreshed": "অ্যাডমিন অ্যাক্সেস টোকেন রিফ্রেশ হয়েছে",
-    "adminLoggedOut": "অ্যাডমিন সফলভাবে লগ আউট হয়েছে"
+    "adminLoggedOut": "অ্যাডমিন সফলভাবে লগ আউট হয়েছে",
+    "oauthClientsListed": "OAuth ক্লায়েন্ট তালিকাভুক্ত",
+    "oauthClientFetched": "OAuth ক্লায়েন্ট পাওয়া গেছে",
+    "oauthClientCreated": "OAuth ক্লায়েন্ট তৈরি হয়েছে",
+    "oauthClientUpdated": "OAuth ক্লায়েন্ট আপডেট হয়েছে",
+    "oauthClientDisabled": "OAuth ক্লায়েন্ট নিষ্ক্রিয় করা হয়েছে",
+    "oauthClientEnabled": "OAuth ক্লায়েন্ট সক্রিয় করা হয়েছে"
   }
 }

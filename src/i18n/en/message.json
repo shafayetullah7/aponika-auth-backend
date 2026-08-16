@@ -19,6 +19,12 @@
     "adminLoggedIn": "Admin logged in successfully",
     "adminAuthenticated": "Admin authenticated",
     "adminTokenRefreshed": "Admin access token refreshed",
-    "adminLoggedOut": "Admin logged out successfully"
+    "adminLoggedOut": "Admin logged out successfully",
+    "oauthClientsListed": "OAuth clients listed",
+    "oauthClientFetched": "OAuth client fetched",
+    "oauthClientCreated": "OAuth client created",
+    "oauthClientUpdated": "OAuth client updated",
+    "oauthClientDisabled": "OAuth client disabled",
+    "oauthClientEnabled": "OAuth client enabled"
   }
 }
