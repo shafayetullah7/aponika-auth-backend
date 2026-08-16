@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, count, eq, gt, isNull } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   TUser,
@@ -105,6 +105,54 @@ export class UserSessionRepository {
       .returning();
 
     return row ?? null;
+  }
+
+  async revokeAllActiveByUserId(
+    userId: string,
+    tx?: DrizzleTx,
+  ): Promise<number> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const rows = await executor
+      .update(userSessionsTable)
+      .set({ revokedAt: new Date() })
+      .where(
+        and(
+          eq(userSessionsTable.userId, userId),
+          isNull(userSessionsTable.revokedAt),
+        ),
+      )
+      .returning({ id: userSessionsTable.id });
+
+    return rows.length;
+  }
+
+  async countByUserId(
+    userId: string,
+    tx?: DrizzleTx,
+  ): Promise<{ total: number; active: number }> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const now = new Date();
+
+    const [totalResult] = await executor
+      .select({ value: count() })
+      .from(userSessionsTable)
+      .where(eq(userSessionsTable.userId, userId));
+
+    const [activeResult] = await executor
+      .select({ value: count() })
+      .from(userSessionsTable)
+      .where(
+        and(
+          eq(userSessionsTable.userId, userId),
+          isNull(userSessionsTable.revokedAt),
+          gt(userSessionsTable.expiresAt, now),
+        ),
+      );
+
+    return {
+      total: Number(totalResult?.value ?? 0),
+      active: Number(activeResult?.value ?? 0),
+    };
   }
 
   async update(

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { TAuditAction } from '@/_db/drizzle/enum/audit-action.enum';
+import { AuditActionEnum, TAuditAction } from '@/_db/drizzle/enum/audit-action.enum';
 import { TAuditActorType } from '@/_db/drizzle/enum/audit-actor-type.enum';
 import { TAuditEvent } from '@/_db/drizzle/schema/audit/audit-event.schema';
 import { DrizzleTx } from '@/_db/drizzle/types';
@@ -45,5 +45,12 @@ export class AuditService {
     limit = 10,
   ): Promise<TAuditEvent[]> {
     return this.auditRepository.listByResource(resourceType, resourceId, limit);
+  }
+
+  async findLatestUserLogin(userId: string): Promise<TAuditEvent | null> {
+    return this.auditRepository.findLatestByActorAndAction(
+      userId,
+      AuditActionEnum.USER_LOGIN_SUCCESS,
+    );
   }
 }
