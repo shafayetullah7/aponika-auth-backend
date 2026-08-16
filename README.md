@@ -20,13 +20,12 @@ Copy env once: `cp .env.example .env.development`
 ```bash
 pnpm install
 pnpm docker:db                     # Postgres on localhost:5436
+# In .env.development set DB_HOST=localhost and DB_PORT=5436 for host API only
 pnpm start:dev                     # http://localhost:3010
 curl http://localhost:3010/health  # { "status": "ok", "db": "ok" }
 ```
 
-Uses `DB_HOST=localhost` and `DB_PORT=5436` from `.env.development`.
-
-### Option B — Full stack in Docker (like byte-forge-auth)
+### Option B — Full stack in Docker (default, like byte-forge-auth)
 
 ```bash
 pnpm install
@@ -35,7 +34,7 @@ pnpm docker:logs                   # follow API logs
 pnpm docker:down                   # stop app + db
 ```
 
-Compose sets `DB_HOST=db` and `DB_PORT=5432` on the app container. API is still exposed at `http://localhost:3010`.
+Uses `DB_HOST=db` and `DB_PORT=5432` from `.env.development`. API is exposed at `http://localhost:3010`.
 
 ### Production image
 
@@ -63,7 +62,13 @@ Migrations are user-owned: `pnpm db:generate` then `pnpm db:migrate` (or `db:mig
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `CORS_ORIGINS` | `http://localhost:3011,http://localhost:3012` | Allowed browser origins for credentialed API calls |
-| `DB_HOST` / `DB_PORT` | `localhost` / `5436` | Host dev; overridden to `db` / `5432` in `docker:dev` |
+| `OIDC_ISSUER` | `http://localhost:3010` | OIDC issuer / discovery base URL |
+| `OIDC_ACCESS_TOKEN_TTL` | `900` | OIDC access token lifetime (seconds) |
+| `COOKIE_DOMAIN` | `localhost` | Session cookie domain |
+| `SESSION_MAX_AGE` | `604800000` | Session cookie max-age (ms) |
+| `JWT_*_SECRET` | 32+ chars | Admin/user BFF session JWT signing — see `.env.example` |
+| `DB_HOST` / `DB_PORT` | `db` / `5432` | Docker Compose service networking |
+| `DB_EXTERNAL_PORT` | `5436` | Host port to reach Postgres (`localhost:5436`) |
 | `APP_EXTERNAL_PORT` | `3010` | Host port mapped to the API container |
 | `COMPOSE_PROJECT_NAME` | `aponika-auth` | Docker Compose project name |
 | `DOCKER_BUILD_TARGET` | `development` | Dockerfile stage (`development` or `production`) |

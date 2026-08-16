@@ -14,6 +14,7 @@ import configuration from './libs/config/configuration';
 import { envSchema } from './libs/config/env.schema';
 import { AppConfigModule } from './libs/config/app-config.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PlatformModule } from './modules/platform/platform.module';
     }),
     AppConfigModule,
     PlatformModule,
+    AuditModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {

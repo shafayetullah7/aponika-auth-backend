@@ -1,12 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": [
-    "node_modules",
-    "test",
-    "dist",
-    "**/*spec.ts",
-    "drizzle.config.ts",
-    "eslint.config.mjs"
-  ],
-  "include": ["src/**/*"]
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "drizzle.config.ts", "eslint.config.mjs"],
+  "include": ["src/**/*"],
+  "ignoreDeprecations": "6.0"
 }

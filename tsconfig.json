@@ -10,12 +10,15 @@
     "target": "esnext",
     "sourceMap": true,
     "outDir": "./dist",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/libs/*": ["./src/libs/*"],
       "@/modules/*": ["./src/modules/*"]
     },
     "incremental": true,
+
+    // Drizzle ORM compatibility settings
     "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,
@@ -23,8 +26,12 @@
     "strictBindCallApply": false,
     "strictFunctionTypes": false,
     "strictPropertyInitialization": false,
+
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false,
-    "types": ["node", "jest"]
-  }
+    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types", "./src/globalTypes"]
+  },
+  // Silence baseUrl deprecation warning (needed for paths resolution)
+  "ignoreDeprecations": "6.0"
 }

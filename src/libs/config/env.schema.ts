@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+const jwtSecret = z.string().min(32, 'JWT secrets must be at least 32 characters');
+
+const durationString = z
+  .string()
+  .regex(/^\d+[smhd]$/, 'Expected duration like 15m, 7d, 1h');
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number(),
@@ -15,6 +21,31 @@ export const envSchema = z.object({
   DB_EXTERNAL_PORT: z.coerce.number(),
 
   CORS_ORIGINS: z.string().min(1),
+
+  /** OIDC issuer URL (discovery, iss claim). No trailing slash. */
+  OIDC_ISSUER: z.string().url(),
+
+  /** OIDC access token TTL in seconds (default 15 minutes). */
+  OIDC_ACCESS_TOKEN_TTL: z.coerce.number().int().positive().default(900),
+
+  /**
+   * Path to RS256 private key PEM for OIDC JWKS (F21+).
+   * Optional in dev until keys are generated.
+   */
+  OIDC_JWKS_PRIVATE_KEY_PATH: z.string().optional().default(''),
+
+  COOKIE_DOMAIN: z.string().min(1),
+  SESSION_MAX_AGE: z.coerce.number().int().positive(),
+
+  JWT_ADMIN_ACCESS_SECRET: jwtSecret,
+  JWT_ADMIN_ACCESS_EXP: durationString.default('15m'),
+  JWT_ADMIN_REFRESH_SECRET: jwtSecret,
+  JWT_ADMIN_REFRESH_EXP: durationString.default('7d'),
+
+  JWT_USER_ACCESS_SECRET: jwtSecret,
+  JWT_USER_ACCESS_EXP: durationString.default('15m'),
+  JWT_USER_REFRESH_SECRET: jwtSecret,
+  JWT_USER_REFRESH_EXP: durationString.default('7d'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

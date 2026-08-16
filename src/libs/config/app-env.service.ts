@@ -53,4 +53,60 @@ export class AppEnvService {
   get CORS_ORIGINS() {
     return this.configService.get('CORS_ORIGINS', { infer: true });
   }
+
+  get OIDC_ISSUER() {
+    return this.configService.get('OIDC_ISSUER', { infer: true });
+  }
+
+  get OIDC_ACCESS_TOKEN_TTL() {
+    return this.configService.get('OIDC_ACCESS_TOKEN_TTL', { infer: true });
+  }
+
+  get OIDC_JWKS_PRIVATE_KEY_PATH() {
+    return this.configService.get('OIDC_JWKS_PRIVATE_KEY_PATH', { infer: true });
+  }
+
+  get COOKIE_DOMAIN() {
+    return this.configService.get('COOKIE_DOMAIN', { infer: true });
+  }
+
+  get SESSION_MAX_AGE() {
+    return this.configService.get('SESSION_MAX_AGE', { infer: true });
+  }
+
+  get JWT_ADMIN_ACCESS_SECRET() {
+    return this.configService.get('JWT_ADMIN_ACCESS_SECRET', { infer: true });
+  }
+
+  get JWT_ADMIN_ACCESS_EXP() {
+    return this.configService.get('JWT_ADMIN_ACCESS_EXP', { infer: true });
+  }
+
+  get JWT_ADMIN_REFRESH_SECRET() {
+    return this.configService.get('JWT_ADMIN_REFRESH_SECRET', { infer: true });
+  }
+
+  get JWT_ADMIN_REFRESH_EXP() {
+    return this.configService.get('JWT_ADMIN_REFRESH_EXP', { infer: true });
+  }
+
+  get JWT_USER_ACCESS_SECRET() {
+    return this.configService.get('JWT_USER_ACCESS_SECRET', { infer: true });
+  }
+
+  get JWT_USER_ACCESS_EXP() {
+    return this.configService.get('JWT_USER_ACCESS_EXP', { infer: true });
+  }
+
+  get JWT_USER_REFRESH_SECRET() {
+    return this.configService.get('JWT_USER_REFRESH_SECRET', { infer: true });
+  }
+
+  get JWT_USER_REFRESH_EXP() {
+    return this.configService.get('JWT_USER_REFRESH_EXP', { infer: true });
+  }
+
+  get isProduction() {
+    return this.NODE_ENV === 'production';
+  }
 }
