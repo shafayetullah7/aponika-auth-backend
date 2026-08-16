@@ -13,6 +13,7 @@ import { DrizzleModule } from './_db/drizzle/drizzle.module';
 import configuration from './libs/config/configuration';
 import { envSchema } from './libs/config/env.schema';
 import { AppConfigModule } from './libs/config/app-config.module';
+import { SecurityModule } from './libs/security/security.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { OAuthModule } from './modules/oauth/oauth.module';
@@ -20,6 +21,7 @@ import { OidcModule } from './modules/oauth/oidc/oidc.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { UserAuthModule } from './modules/user-auth/user-auth.module';
 import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
+import { ExampleModule } from './modules/example/example.module';
 import { SessionModule } from './modules/session/session.module';
 import { ResponseModule } from './libs/response/response.module';
 import { CookieModule } from './libs/cookie/cookie.module';
@@ -41,6 +43,7 @@ import { UserAuthGuardModule } from './libs/guards/user-auth.guard.module';
       expandVariables: true,
     }),
     AppConfigModule,
+    SecurityModule,
     PlatformModule,
     AuditModule,
     OAuthModule,
@@ -48,6 +51,7 @@ import { UserAuthGuardModule } from './libs/guards/user-auth.guard.module';
     IdentityModule,
     UserAuthModule,
     PlatformAdminModule,
+    ExampleModule,
     SessionModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',

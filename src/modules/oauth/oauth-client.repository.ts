@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { and, asc, count, eq, SQL } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, SQL } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
-import { TOAuthClientStatus } from '@/_db/drizzle/enum';
+import {
+  OAuthClientStatusEnum,
+  OAuthClientUriKindEnum,
+  TOAuthClientStatus,
+} from '@/_db/drizzle/enum';
 import {
   oauthClientRedirectUrisTable,
   oauthClientsTable,
@@ -210,6 +214,28 @@ export class OAuthClientRepository {
       .where(whereClause);
 
     return Number(result?.value ?? 0);
+  }
+
+  async listCorsUrisForActiveClients(tx?: DrizzleTx): Promise<string[]> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const rows = await executor
+      .select({ uri: oauthClientRedirectUrisTable.uri })
+      .from(oauthClientRedirectUrisTable)
+      .innerJoin(
+        oauthClientsTable,
+        eq(oauthClientRedirectUrisTable.oauthClientId, oauthClientsTable.id),
+      )
+      .where(
+        and(
+          eq(oauthClientsTable.status, OAuthClientStatusEnum.ACTIVE),
+          inArray(oauthClientRedirectUrisTable.kind, [
+            OAuthClientUriKindEnum.ALLOWED_ORIGIN,
+            OAuthClientUriKindEnum.REDIRECT,
+          ]),
+        ),
+      );
+
+    return rows.map((row) => row.uri);
   }
 
   private async createWithUrisInTx(

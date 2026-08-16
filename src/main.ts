@@ -5,7 +5,8 @@ import cookieParser from 'cookie-parser';
 import type { Application } from 'express';
 import { AppModule } from './app.module';
 import { AppEnvService } from './libs/config/app-env.service';
-import { getAllowedOrigins } from './libs/security/allowed-origins';
+import { CorsOriginsService } from './libs/security/cors-origins.service';
+import { applySecurityHeaders } from './libs/security/security-headers.middleware';
 import { OidcService } from './modules/oauth/oidc/oidc.service';
 import { OIDC_GLOBAL_PREFIX_EXCLUSIONS } from './modules/oauth/oidc/oidc-routes.constants';
 
@@ -25,9 +26,21 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const appEnv = app.get(AppEnvService);
+  const corsOrigins = app.get(CorsOriginsService);
+
+  app.use(applySecurityHeaders(appEnv));
 
   app.enableCors({
-    origin: getAllowedOrigins(appEnv),
+    origin: (origin, callback) => {
+      void corsOrigins.isAllowed(origin).then((allowed) => {
+        if (allowed) {
+          callback(null, origin ?? true);
+          return;
+        }
+
+        callback(null, false);
+      });
+    },
     credentials: true,
   });
 

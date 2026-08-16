@@ -54,6 +54,10 @@ describe('UserAuthService', () => {
     recordFailedAttempt: jest.fn(),
     reset: jest.fn(),
   };
+  const userRegistrationRateLimiter = {
+    assertCanAttempt: jest.fn(),
+    recordAttempt: jest.fn(),
+  };
 
   const auditService = {
     record: jest.fn(),
@@ -129,6 +133,7 @@ describe('UserAuthService', () => {
       emailVerificationRepository as unknown as EmailVerificationRepository,
       userSessionService as unknown as UserSessionService,
       userLoginRateLimiter as unknown as UserLoginRateLimiterService,
+      userRegistrationRateLimiter as unknown as import('./user-registration-rate-limiter.service').UserRegistrationRateLimiterService,
       auditService as unknown as AuditService,
       mailService as unknown as MailService,
       drizzleService as unknown as DrizzleService,

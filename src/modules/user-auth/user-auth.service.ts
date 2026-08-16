@@ -31,6 +31,7 @@ import { LoginUserInput } from './dto/login-user.dto';
 import { RegisterUserInput } from './dto/register-user.dto';
 import { VerifyEmailInput } from './dto/verify-email.dto';
 import { UserLoginRateLimiterService } from './user-login-rate-limiter.service';
+import { UserRegistrationRateLimiterService } from './user-registration-rate-limiter.service';
 
 export type PublicUser = {
   id: string;
@@ -58,6 +59,7 @@ export class UserAuthService {
     private readonly emailVerificationRepository: EmailVerificationRepository,
     private readonly userSessionService: UserSessionService,
     private readonly userLoginRateLimiter: UserLoginRateLimiterService,
+    private readonly userRegistrationRateLimiter: UserRegistrationRateLimiterService,
     private readonly auditService: AuditService,
     private readonly mailService: MailService,
     private readonly drizzleService: DrizzleService,
@@ -71,6 +73,10 @@ export class UserAuthService {
     lang: string = 'en',
     ip?: string | null,
   ): Promise<PublicUser> {
+    const rateLimitKey = ip?.trim() || payload.email.toLowerCase();
+    this.userRegistrationRateLimiter.assertCanAttempt(rateLimitKey, lang);
+    this.userRegistrationRateLimiter.recordAttempt(rateLimitKey);
+
     const existing = await this.identityRepository.findByEmail(payload.email);
 
     if (existing) {

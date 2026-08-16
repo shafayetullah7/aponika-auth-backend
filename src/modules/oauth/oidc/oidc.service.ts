@@ -12,11 +12,15 @@ import {
   OidcProviderFactory,
   OidcProviderInstance,
 } from './oidc-provider.factory';
+import { OidcTokenRateLimiterService } from './oidc-token-rate-limiter.service';
 import { OidcTokenAuditListener } from './oidc-token-audit.listener';
 import {
   isOidcHttpPath,
   OIDC_INTERACTION_PATH_PREFIX,
+  OIDC_ROUTE_PATHS,
 } from './oidc-routes.constants';
+import { getClientIp } from '@/libs/utils/get-client-ip';
+import { CustomException } from '@/libs/exceptions/custom.exception';
 
 @Injectable()
 export class OidcService implements OnModuleInit {
@@ -33,6 +37,7 @@ export class OidcService implements OnModuleInit {
     private readonly interactionService: OidcInteractionService,
     private readonly tokenAuditListener: OidcTokenAuditListener,
     private readonly endSessionListener: OidcEndSessionListener,
+    private readonly tokenRateLimiter: OidcTokenRateLimiterService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -87,6 +92,25 @@ export class OidcService implements OnModuleInit {
     );
 
     app.use((req, res, next) => {
+      if (req.method === 'POST' && req.path === OIDC_ROUTE_PATHS.token) {
+        try {
+          const key = getClientIp(req) ?? 'unknown';
+          this.tokenRateLimiter.assertCanAttempt(key);
+          this.tokenRateLimiter.recordAttempt(key);
+        } catch (error) {
+          if (error instanceof CustomException) {
+            res.status(error.getStatus()).json({
+              error: 'too_many_requests',
+              error_description: error.message,
+            });
+            return;
+          }
+
+          next(error);
+          return;
+        }
+      }
+
       if (!isOidcHttpPath(req.path)) {
         next();
         return;

@@ -9,6 +9,7 @@ import { AccountService } from '@/modules/account/account.service';
 import { UserAuthController } from './user-auth.controller';
 import { UserAuthService } from './user-auth.service';
 import { UserLoginRateLimiterService } from './user-login-rate-limiter.service';
+import { UserRegistrationRateLimiterService } from './user-registration-rate-limiter.service';
 
 @Module({
   imports: [
@@ -19,7 +20,12 @@ import { UserLoginRateLimiterService } from './user-login-rate-limiter.service';
     JwtModule.register({}),
   ],
   controllers: [UserAuthController, AccountController],
-  providers: [UserAuthService, UserLoginRateLimiterService, AccountService],
+  providers: [
+    UserAuthService,
+    UserLoginRateLimiterService,
+    UserRegistrationRateLimiterService,
+    AccountService,
+  ],
   exports: [UserAuthService],
 })
 export class UserAuthModule {}

@@ -21,6 +21,7 @@ import { OidcProviderFactory } from './oidc-provider.factory';
 import { OidcResourceConfigService } from './oidc-resource.config';
 import { OidcService } from './oidc.service';
 import { OidcTokenAuditListener } from './oidc-token-audit.listener';
+import { OidcTokenRateLimiterService } from './oidc-token-rate-limiter.service';
 import { OidcTokenClaimsService } from './oidc-token-claims.service';
 import { OidcUserSessionBridge } from './oidc-user-session.bridge';
 
@@ -49,6 +50,7 @@ import { OidcUserSessionBridge } from './oidc-user-session.bridge';
     OidcResourceConfigService,
     OidcTokenClaimsService,
     OidcTokenAuditListener,
+    OidcTokenRateLimiterService,
     OidcProviderFactory,
     OidcService,
   ],

@@ -13,7 +13,8 @@
     "invalidEmailVerificationToken": "Invalid or expired email verification link",
     "adminRegistrationRateLimited": "Admin registration OTP can only be requested once per minute. Please try again shortly",
     "adminLoginRateLimited": "Too many login attempts. Please try again later",
-    "userLoginRateLimited": "Too many login attempts. Please try again later"
+    "userLoginRateLimited": "Too many login attempts. Please try again later",
+    "userRegistrationRateLimited": "Too many registration attempts. Please try again later"
   },
   "success": {
     "adminRegistrationOtpSent": "Admin registration OTP sent to the gatekeeper email",

@@ -1,0 +1,45 @@
+---
+description: OIDC, session, and security patterns for auth platform
+alwaysApply: true
+---
+
+# Security, OIDC & sessions
+
+## OIDC issuer
+
+- Mount at issuer root (`:3010`), not under `/api`
+- `COOKIE_DOMAIN=localhost` in dev so :3011 login resumes interaction on :3010
+- PKCE required; public clients are `trusted_first_party` for auto-consent
+- Access token `aud` = `OIDC_DEFAULT_RESOURCE` (resource indicators)
+- Token endpoint rate-limited per IP (F35)
+
+## Sessions (hosted login)
+
+| Cookie | Purpose |
+|--------|---------|
+| `userAccessToken` / `userRefreshToken` | End-user session (httpOnly) |
+| `user-xsrf-token` | CSRF double-submit |
+| `adminAccessToken` / `adminRefreshToken` / `xsrf-token` | Operator session |
+
+State-changing browser API calls require matching XSRF header.
+
+## Resource servers (consumers)
+
+- Copy `libs/auth/jwt-resource.guard.ts` — JWKS verify, no introspection
+- Map `sub` → local `user_identities` in consumer DB only
+- Do not add marketplace authorization here
+
+## CORS
+
+- `CorsOriginsService` merges `CORS_ORIGINS` + active OAuth client origins
+- Refresh cache after client URI changes (5 min TTL auto)
+
+## Rate limits
+
+In-memory for dev/single instance. Use Redis before horizontal scale.
+
+## Headers
+
+`applySecurityHeaders` on backend; SolidStart `middleware.ts` on frontends. CSP deferred (Vite HMR).
+
+See [docs/SECURITY.md](../../docs/SECURITY.md).

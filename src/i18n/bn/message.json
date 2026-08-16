@@ -13,7 +13,8 @@
     "invalidEmailVerificationToken": "ভুল বা মেয়াদোত্তীর্ণ ইমেইল যাচাইকরণ লিংক",
     "adminRegistrationRateLimited": "অ্যাডমিন রেজিস্ট্রেশন OTP প্রতি মিনিটে একবারই অনুরোধ করা যায়। কিছুক্ষণ পর আবার চেষ্টা করুন",
     "adminLoginRateLimited": "অতিরিক্ত লগইন প্রচেষ্টা। পরে আবার চেষ্টা করুন",
-    "userLoginRateLimited": "অতিরিক্ত লগইন প্রচেষ্টা। পরে আবার চেষ্টা করুন"
+    "userLoginRateLimited": "অতিরিক্ত লগইন প্রচেষ্টা। পরে আবার চেষ্টা করুন",
+    "userRegistrationRateLimited": "অতিরিক্ত নিবন্ধন প্রচেষ্টা। পরে আবার চেষ্টা করুন"
   },
   "success": {
     "adminRegistrationOtpSent": "অ্যাডমিন রেজিস্ট্রেশন OTP গেটকিপার ইমেইলে পাঠানো হয়েছে",
