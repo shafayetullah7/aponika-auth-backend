@@ -22,7 +22,13 @@ export async function seedOAuthClients(): Promise<void> {
       .limit(1);
 
     if (existing) {
-      console.log(`⏭️  Skipping ${definition.clientId} (already exists)`);
+      await seedDb
+        .update(oauthClientsTable)
+        .set({
+          trustedFirstParty: definition.trustedFirstParty ?? false,
+        })
+        .where(eq(oauthClientsTable.clientId, definition.clientId));
+      console.log(`🔄 Synced ${definition.clientId} trusted_first_party flag`);
       continue;
     }
 

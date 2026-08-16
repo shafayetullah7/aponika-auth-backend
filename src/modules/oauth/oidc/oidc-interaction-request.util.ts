@@ -1,11 +1,4 @@
 import type { Request, Response } from 'express';
-import { OIDC_INTERACTION_PATH_PREFIX } from './oidc-routes.constants';
-
-export function augmentInteractionRequest(req: Request, uid: string): void {
-  const expressLike = req as Request & { path?: string };
-  expressLike.path = `${OIDC_INTERACTION_PATH_PREFIX}/${uid}`;
-  req.params = { ...req.params, uid };
-}
 
 export function createCapturingInteractionResponse(): {
   res: Response;
@@ -62,6 +55,5 @@ export function createInteractionRequest(
     },
   } as unknown as Request;
 
-  augmentInteractionRequest(req, uid);
   return req;
 }

@@ -14,10 +14,7 @@ import {
   OIDC_INTERACTION_PATH_PREFIX,
 } from './oidc-routes.constants';
 import type { OidcProviderInstance } from './oidc-provider.factory';
-import {
-  augmentInteractionRequest,
-  createCapturingInteractionResponse,
-} from './oidc-interaction-request.util';
+import { createCapturingInteractionResponse } from './oidc-interaction-request.util';
 import { OidcUserSessionBridge } from './oidc-user-session.bridge';
 
 type OidcInteractionPrompt = {
@@ -178,7 +175,9 @@ export class OidcInteractionService {
       details.params.client_id,
     );
     if (!client) {
-      throw new NotFoundException('OAuth client not found');
+      throw new NotFoundException(
+        `OAuth client "${details.params.client_id}" is not registered on this identity server`,
+      );
     }
 
     const scopes = this.resolveRequestedScopes(details);
@@ -202,7 +201,6 @@ export class OidcInteractionService {
     const details = await this.readInteractionDetails(req, provider, uid);
     this.assertConsentPromptForUser(details, userId);
 
-    augmentInteractionRequest(req, uid);
     const capture = createCapturingInteractionResponse();
     await this.finishConsentInteraction(
       req,
@@ -229,7 +227,6 @@ export class OidcInteractionService {
     const details = await this.readInteractionDetails(req, provider, uid);
     this.assertConsentPromptForUser(details, userId);
 
-    augmentInteractionRequest(req, uid);
     const capture = createCapturingInteractionResponse();
 
     await provider.interactionFinished(
@@ -337,16 +334,43 @@ export class OidcInteractionService {
     uid?: string,
     res?: Response,
   ): Promise<OidcInteractionDetails> {
-    if (uid) {
-      augmentInteractionRequest(req, uid);
-    }
-
     const interactionRes = res ?? createCapturingInteractionResponse().res;
 
-    return (await provider.interactionDetails(
-      req,
-      interactionRes,
-    )) as OidcInteractionDetails;
+    try {
+      return (await provider.interactionDetails(
+        req,
+        interactionRes,
+      )) as OidcInteractionDetails;
+    } catch (error) {
+      throw this.toConsentInteractionError(error, uid);
+    }
+  }
+
+  private toConsentInteractionError(error: unknown, uid?: string): never {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorName =
+      error instanceof Error && 'name' in error
+        ? String(error.name)
+        : undefined;
+
+    this.logger.warn(
+      `Failed to read OIDC interaction details${uid ? ` for ${uid}` : ''}: ${message}`,
+    );
+
+    if (
+      errorName === 'SessionNotFound'
+      || message.includes('interaction session id cookie not found')
+      || message.includes('interaction session not found')
+      || message.includes('session not found')
+    ) {
+      throw new BadRequestException(
+        'OIDC interaction session is missing or expired. Start sign-in again from the application.',
+      );
+    }
+
+    throw new BadRequestException(
+      'OIDC interaction could not be loaded. Start sign-in again from the application.',
+    );
   }
 
   private assertConsentPromptForUser(
