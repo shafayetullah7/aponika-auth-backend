@@ -23,6 +23,18 @@ pnpm run lint
 pnpm run typecheck
 ```
 
+## Environment
+
+Copy `.env.example` to `.env.development`. Key variables:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CORS_ORIGINS` | `http://localhost:3011,http://localhost:3012` | Allowed browser origins for credentialed API calls |
+| `DB_PORT` | `5436` | Postgres host port when Nest runs outside Docker |
+| `APP_EXTERNAL_PORT` | `3010` | HTTP listen port |
+
+Health is at `GET /health` (outside `/api` prefix). Frontends use `VITE_HEALTH_URL` to smoke-test connectivity in dev.
+
 Migrations are user-owned: `pnpm db:generate` then `pnpm db:migrate` after schema changes.
 
 ## Documentation
