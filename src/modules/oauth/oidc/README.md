@@ -1,4 +1,4 @@
-# OIDC provider module (F21–F26)
+# OIDC provider module (F21–F28)
 
 NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-provider) per [ADR-001](../../../docs/adr/ADR-001-oidc-provider-strategy.md).
 
@@ -20,6 +20,9 @@ NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-prov
 | `oidc-resource.config.ts` | Resource indicators → JWT access tokens (`aud`, RS256) |
 | `oidc-token-claims.service.ts` | `extraTokenClaims` (`email`, `email_verified` on access tokens) |
 | `oidc-token-audit.listener.ts` | `grant.success` → `oidc.token.issued` audit |
+| `oidc-hosted-error.service.ts` | `renderError` → auth frontend `/oauth/error` |
+| `oidc-logout-ui.service.ts` | RP-initiated logout UI (auto-submit confirm) |
+| `oidc-end-session.listener.ts` | `end_session.success` → revoke F16 session + clear cookies |
 | `oidc.service.ts` | Init on module boot; mount Express middleware + interaction route |
 
 ## HTTP mount
@@ -37,6 +40,10 @@ OIDC routes are mounted at the **issuer root** (not under `/api`), e.g.:
 Authorization (F23): unauthenticated users are sent to the auth frontend login; after F16 session cookies are present, `/interaction/:uid` completes login.
 
 Consent (F26): third-party clients redirect to `/consent` on the auth frontend; `trusted_first_party` clients auto-consent. Remembered consent skips the prompt via `loadExistingGrant`.
+
+Hosted login (F27): `COOKIE_DOMAIN=localhost` shares F16 cookies across issuer and auth UI ports. Authorize errors that cannot redirect to the client are sent to `{AUTH_FRONTEND_URL}/oauth/error`.
+
+Logout (F28): `GET/POST /session/end` for RP-initiated logout; `post_logout_redirect_uri` must be registered per client. Clears OIDC session and F16 cookies when present.
 
 Token (F24): `POST /token` with `authorization_code` + PKCE issues JWT access token (`aud` = `OIDC_DEFAULT_RESOURCE`), `id_token`, and refresh token. See `scripts/oidc-pkce-token-exchange.sh`.
 

@@ -16,7 +16,18 @@ export type OidcGrantSuccessContext = {
 
 export type OidcProviderEventMap = {
   'grant.success': OidcGrantSuccessContext;
+  'end_session.success': OidcEndSessionSuccessContext;
 };
+
+export type OidcEndSessionSuccessContext = {
+  ip?: string;
+};
+
+export function isOidcEndSessionSuccessContext(
+  ctx: unknown,
+): ctx is OidcEndSessionSuccessContext {
+  return ctx !== null && typeof ctx === 'object';
+}
 
 export function isOidcGrantSuccessContext(
   ctx: unknown,

@@ -118,7 +118,7 @@ describe('OIDC authorize integration', () => {
   });
 
   describe('validation errors', () => {
-    it('returns OAuth error for invalid redirect_uri', async () => {
+    it('redirects to hosted error page for invalid redirect_uri', async () => {
       const sessionBridge = {
         resolveAuthenticatedUser: jest.fn().mockResolvedValue(null),
       };
@@ -135,10 +135,13 @@ describe('OIDC authorize integration', () => {
             redirect_uri: 'http://evil.example/callback',
           })
           .redirects(0)
-          .expect(400);
+          .expect(303);
 
-        expect(res.text).toContain('error');
-        expect(res.text).toContain('test-state');
+        const errorUrl = new URL(res.headers.location!);
+        expect(errorUrl.origin).toBe('http://localhost:3011');
+        expect(errorUrl.pathname).toBe('/oauth/error');
+        expect(errorUrl.searchParams.get('error')).toBeTruthy();
+        expect(errorUrl.searchParams.get('state')).toBe('test-state');
       } finally {
         await closeOidcTestServer(server);
       }

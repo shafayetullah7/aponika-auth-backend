@@ -7,6 +7,12 @@ import { parseDurationMs } from '@/libs/utils/parse-duration';
 export class CookieService {
   constructor(private readonly appEnv: AppEnvService) {}
 
+  /** Shared across issuer (:3010) and auth frontend (:3011) when set (e.g. `localhost`). */
+  private resolveCookieDomain(): string | undefined {
+    const domain = this.appEnv.COOKIE_DOMAIN?.trim();
+    return domain || undefined;
+  }
+
   private getAdminCookieOptions(httpOnly: boolean): CookieOptions {
     const isProduction = this.appEnv.isProduction;
 
@@ -14,7 +20,7 @@ export class CookieService {
       httpOnly,
       secure: isProduction,
       sameSite: 'lax',
-      domain: isProduction ? this.appEnv.COOKIE_DOMAIN : undefined,
+      domain: this.resolveCookieDomain(),
       path: '/',
     };
   }
@@ -66,7 +72,7 @@ export class CookieService {
       httpOnly,
       secure: isProduction,
       sameSite: 'lax',
-      domain: isProduction ? this.appEnv.COOKIE_DOMAIN : undefined,
+      domain: this.resolveCookieDomain(),
       path: '/',
     };
   }

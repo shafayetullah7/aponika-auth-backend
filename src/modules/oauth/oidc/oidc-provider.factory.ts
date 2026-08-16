@@ -7,6 +7,8 @@ import { OidcInteractionService } from './oidc-interaction.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcResourceConfigService } from './oidc-resource.config';
 import { OidcConsentGrantService } from './oidc-consent-grant.service';
+import { OidcHostedErrorService } from './oidc-hosted-error.service';
+import { OidcLogoutUiService } from './oidc-logout-ui.service';
 import { OidcTokenClaimsService } from './oidc-token-claims.service';
 import { OIDC_PROVIDER_ROUTES } from './oidc-routes.constants';
 import type { OidcProviderEventMap } from './oidc-provider.types';
@@ -49,6 +51,8 @@ export class OidcProviderFactory {
     private readonly resourceConfig: OidcResourceConfigService,
     private readonly tokenClaims: OidcTokenClaimsService,
     private readonly consentGrantService: OidcConsentGrantService,
+    private readonly hostedErrorService: OidcHostedErrorService,
+    private readonly logoutUiService: OidcLogoutUiService,
   ) {}
 
   async create(): Promise<OidcProviderInstance> {
@@ -69,6 +73,11 @@ export class OidcProviderFactory {
         devInteractions: { enabled: false },
         introspection: { enabled: true },
         revocation: { enabled: true },
+        rpInitiatedLogout: {
+          enabled: true,
+          logoutSource: this.logoutUiService.logoutSource,
+          postLogoutSuccessSource: this.logoutUiService.postLogoutSuccessSource,
+        },
         resourceIndicators: {
           enabled: true,
           defaultResource: this.resourceConfig.defaultResource,
@@ -103,6 +112,7 @@ export class OidcProviderFactory {
       issueRefreshToken: async () => true,
       rotateRefreshToken: async () => true,
       conformIdTokenClaims: true,
+      renderError: this.hostedErrorService.renderError,
     }) as OidcProviderInstance;
   }
 }

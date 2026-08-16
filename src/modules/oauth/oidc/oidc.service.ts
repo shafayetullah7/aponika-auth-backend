@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { Application, NextFunction, Request, Response } from 'express';
 import { OidcBootConfigService } from './oidc-boot.config';
+import { OidcEndSessionListener } from './oidc-end-session.listener';
 import { OidcInteractionService } from './oidc-interaction.service';
 import {
   OidcProviderFactory,
@@ -31,6 +32,7 @@ export class OidcService implements OnModuleInit {
     private readonly providerFactory: OidcProviderFactory,
     private readonly interactionService: OidcInteractionService,
     private readonly tokenAuditListener: OidcTokenAuditListener,
+    private readonly endSessionListener: OidcEndSessionListener,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -53,6 +55,7 @@ export class OidcService implements OnModuleInit {
     await this.bootConfig.validate();
     this.provider = await this.providerFactory.create();
     this.tokenAuditListener.attach(this.provider);
+    this.endSessionListener.attach(this.provider);
     this.callback = this.provider.callback();
     this.logger.log(`OIDC provider initialized for ${this.provider.issuer}`);
   }

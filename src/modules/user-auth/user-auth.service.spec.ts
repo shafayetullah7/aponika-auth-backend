@@ -352,4 +352,20 @@ describe('UserAuthService', () => {
       errorCode: ErrorCode.INVALID_CREDENTIALS,
     });
   });
+
+  it('revokes the session and audits logout', async () => {
+    await service.logout(session.id, user.id, '127.0.0.1');
+
+    expect(userSessionService.revokeSession).toHaveBeenCalledWith(session.id);
+    expect(auditService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorType: AuditActorTypeEnum.USER,
+        actorId: user.id,
+        action: AuditActionEnum.USER_LOGOUT,
+        resourceType: 'user_session',
+        resourceId: session.id,
+        ip: '127.0.0.1',
+      }),
+    );
+  });
 });

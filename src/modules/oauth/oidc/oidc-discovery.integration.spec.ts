@@ -4,7 +4,9 @@ import type { IdentityRepository } from '@/modules/identity/identity.repository'
 import { OidcAccountService } from './oidc-account.service';
 import { OidcClientRegistry } from './oidc-client.registry';
 import { OidcConsentGrantService } from './oidc-consent-grant.service';
+import { OidcHostedErrorService } from './oidc-hosted-error.service';
 import { OidcInteractionService } from './oidc-interaction.service';
+import { OidcLogoutUiService } from './oidc-logout-ui.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcProviderFactory } from './oidc-provider.factory';
 import { OidcResourceConfigService } from './oidc-resource.config';
@@ -48,6 +50,8 @@ describe('OIDC discovery integration', () => {
       createDefaultOAuthClientRepositoryMock() as never,
       appEnv,
     );
+    const hostedErrorService = new OidcHostedErrorService(appEnv);
+    const logoutUiService = new OidcLogoutUiService(appEnv);
     const factory = new OidcProviderFactory(
       appEnv,
       registry,
@@ -57,6 +61,8 @@ describe('OIDC discovery integration', () => {
       resourceConfig,
       tokenClaims,
       consentGrantService,
+      hostedErrorService,
+      logoutUiService,
     );
     const provider = await factory.create();
 
@@ -82,6 +88,7 @@ describe('OIDC discovery integration', () => {
     expect(res.body.token_endpoint).toMatch(/\/token$/);
     expect(res.body.code_challenge_methods_supported).toContain('S256');
     expect(res.body.grant_types_supported).toContain('refresh_token');
+    expect(res.body.end_session_endpoint).toMatch(/\/session\/end$/);
   });
 
   it('GET /jwks returns public signing keys only', async () => {

@@ -14,7 +14,9 @@ import type { OAuthConsentRepository } from '@/modules/oauth/oauth-consent.repos
 import { OidcAccountService } from './oidc-account.service';
 import { OidcClientRegistry } from './oidc-client.registry';
 import { OidcConsentGrantService } from './oidc-consent-grant.service';
+import { OidcHostedErrorService } from './oidc-hosted-error.service';
 import { OidcInteractionService } from './oidc-interaction.service';
+import { OidcLogoutUiService } from './oidc-logout-ui.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcProviderFactory } from './oidc-provider.factory';
 import { OidcResourceConfigService } from './oidc-resource.config';
@@ -24,6 +26,7 @@ import type { OidcUserSessionBridge } from './oidc-user-session.bridge';
 
 const ISSUER = 'http://localhost:3010';
 const REDIRECT_URI = 'http://localhost:3000/auth/callback';
+const POST_LOGOUT_REDIRECT_URI = 'http://localhost:3000/';
 const THIRD_PARTY_REDIRECT_URI = 'http://localhost:4000/auth/callback';
 export const TEST_OIDC_RESOURCE = 'http://localhost:3005';
 
@@ -74,6 +77,13 @@ export function seedByteForgeWebClient(registry: OidcClientRegistry): void {
         oauthClientId: 'uuid-1',
         uri: REDIRECT_URI,
         kind: OAuthClientUriKindEnum.REDIRECT,
+        createdAt: new Date(),
+      },
+      {
+        id: 'uri-post-logout',
+        oauthClientId: 'uuid-1',
+        uri: POST_LOGOUT_REDIRECT_URI,
+        kind: OAuthClientUriKindEnum.POST_LOGOUT,
         createdAt: new Date(),
       },
     ],
@@ -254,6 +264,8 @@ export async function createOidcTestServer(
   );
   const resourceConfig = new OidcResourceConfigService(appEnv);
   const tokenClaims = new OidcTokenClaimsService(accountService);
+  const hostedErrorService = new OidcHostedErrorService(appEnv);
+  const logoutUiService = new OidcLogoutUiService(appEnv);
   const factory = new OidcProviderFactory(
     appEnv,
     registry,
@@ -263,6 +275,8 @@ export async function createOidcTestServer(
     resourceConfig,
     tokenClaims,
     consentGrantService,
+    hostedErrorService,
+    logoutUiService,
   );
   const provider = await factory.create();
   const oidcHandler = provider.callback();
@@ -386,4 +400,71 @@ export function exchangeRefreshToken(
         refresh_token: refreshToken,
       }).toString(),
     );
+}
+
+export const POST_LOGOUT_URI = POST_LOGOUT_REDIRECT_URI;
+
+export type OidcTokenResponse = {
+  id_token: string;
+  access_token: string;
+  refresh_token?: string;
+};
+
+export async function obtainOidcTokens(
+  agent: ReturnType<typeof request>,
+  challenge: string,
+  verifier: string,
+): Promise<OidcTokenResponse> {
+  const code = await obtainAuthorizationCode(agent, challenge);
+  const tokenRes = await exchangeAuthorizationCode(agent, code, verifier).expect(
+    200,
+  );
+
+  return tokenRes.body as OidcTokenResponse;
+}
+
+export function parseEndSessionLogoutForm(html: string): {
+  action: string;
+  xsrf: string;
+} | null {
+  const xsrf = html.match(/name="xsrf"\s+value="([^"]+)"/)?.[1];
+  const action = html.match(/action="([^"]+)"/)?.[1];
+  if (!xsrf || !action) {
+    return null;
+  }
+
+  return { action, xsrf };
+}
+
+export async function completeRpInitiatedLogout(
+  agent: ReturnType<typeof request>,
+  params: {
+    id_token_hint: string;
+    post_logout_redirect_uri: string;
+    state?: string;
+  },
+): Promise<string> {
+  const initRes = await agent
+    .get(OIDC_ROUTE_PATHS.endSession)
+    .query(params)
+    .expect(200);
+
+  const form = parseEndSessionLogoutForm(initRes.text);
+  if (!form) {
+    throw new Error('Could not parse end_session logout form');
+  }
+
+  const confirmRes = await agent
+    .post(resolveAuthorizeRedirect(form.action))
+    .type('form')
+    .send({ xsrf: form.xsrf, logout: 'yes' })
+    .redirects(0)
+    .expect(303);
+
+  const location = confirmRes.headers.location;
+  if (!location) {
+    throw new Error('end_session confirm did not redirect');
+  }
+
+  return location;
 }

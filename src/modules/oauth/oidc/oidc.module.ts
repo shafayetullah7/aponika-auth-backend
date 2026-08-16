@@ -12,7 +12,10 @@ import { OidcBootConfigService } from './oidc-boot.config';
 import { OidcClientRegistry } from './oidc-client.registry';
 import { OidcConsentController } from './oidc-consent.controller';
 import { OidcConsentGrantService } from './oidc-consent-grant.service';
+import { OidcEndSessionListener } from './oidc-end-session.listener';
+import { OidcHostedErrorService } from './oidc-hosted-error.service';
 import { OidcInteractionService } from './oidc-interaction.service';
+import { OidcLogoutUiService } from './oidc-logout-ui.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcProviderFactory } from './oidc-provider.factory';
 import { OidcResourceConfigService } from './oidc-resource.config';
@@ -40,6 +43,9 @@ import { OidcUserSessionBridge } from './oidc-user-session.bridge';
     OidcUserSessionBridge,
     OidcInteractionService,
     OidcConsentGrantService,
+    OidcHostedErrorService,
+    OidcLogoutUiService,
+    OidcEndSessionListener,
     OidcResourceConfigService,
     OidcTokenClaimsService,
     OidcTokenAuditListener,
