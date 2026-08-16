@@ -29,6 +29,14 @@ export const envSchema = z.object({
   OIDC_ACCESS_TOKEN_TTL: z.coerce.number().int().positive().default(900),
 
   /**
+   * Default resource indicator / JWT `aud` for access tokens (Byte Forge API in dev).
+   */
+  OIDC_DEFAULT_RESOURCE: z
+    .string()
+    .url()
+    .default('http://localhost:3005'),
+
+  /**
    * Path to RS256 private key PEM for OIDC JWKS (F21+).
    * Optional in dev until keys are generated.
    */

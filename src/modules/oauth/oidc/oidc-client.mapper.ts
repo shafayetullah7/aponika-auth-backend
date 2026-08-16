@@ -32,9 +32,17 @@ export function mapOAuthClientToOidcPayload(
 
   const isPublic = bundle.client.clientType === OAuthClientTypeEnum.PUBLIC;
 
+  const grantTypes = bundle.client.grantTypes.filter(
+    (grant) => grant === 'authorization_code' || grant === 'implicit',
+  );
+
+  if (grantTypes.length === 0 && bundle.client.responseTypes.includes('code')) {
+    grantTypes.push('authorization_code');
+  }
+
   return {
     client_id: bundle.client.clientId,
-    grant_types: bundle.client.grantTypes,
+    grant_types: grantTypes,
     response_types: bundle.client.responseTypes,
     redirect_uris: redirectUris,
     post_logout_redirect_uris:

@@ -1,4 +1,4 @@
-# OIDC provider module (F21 bootstrap, F22 discovery/JWKS)
+# OIDC provider module (F21–F24)
 
 NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-provider) per [ADR-001](../../../docs/adr/ADR-001-oidc-provider-strategy.md).
 
@@ -9,12 +9,18 @@ NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-prov
 | `oidc-boot.config.ts` | Fail-fast issuer / JWKS path validation at boot |
 | `oidc-jwks.service.ts` | Load RS256 PEM → signing JWKS; public key strip |
 | `oidc-routes.constants.ts` | Protocol paths, global prefix exclusions, path helpers |
+| `oidc-account.service.ts` | `findAccount` + OIDC claims |
+| `oidc-user-session.bridge.ts` | F16 cookie session → OIDC login |
+| `oidc-interaction.service.ts` | `/interaction/:uid` resume + login redirect |
 | `oidc-client.mapper.ts` | `oauth_clients` row → oidc-provider Client payload |
 | `oidc-client.registry.ts` | Read-through cache (60s TTL) |
 | `oidc-client.adapter.ts` | `Client` storage adapter `find()` |
 | `oidc-adapter.factory.ts` | Client adapter + in-memory adapters for other models (dev) |
 | `oidc-provider.factory.ts` | Dynamic ESM import + Provider construction |
-| `oidc.service.ts` | Init on module boot; mount Express middleware |
+| `oidc-resource.config.ts` | Resource indicators → JWT access tokens (`aud`, RS256) |
+| `oidc-token-claims.service.ts` | `extraTokenClaims` (`email`, `email_verified` on access tokens) |
+| `oidc-token-audit.listener.ts` | `grant.success` → `oidc.token.issued` audit |
+| `oidc.service.ts` | Init on module boot; mount Express middleware + interaction route |
 
 ## HTTP mount
 
@@ -25,9 +31,12 @@ OIDC routes are mounted at the **issuer root** (not under `/api`), e.g.:
 | OpenID Configuration | `/.well-known/openid-configuration` |
 | JWKS | `/jwks` |
 | Authorization | `/auth` |
+| Interaction resume | `/interaction/:uid` |
 | Token | `/token` |
 
-Authorize/interaction UX ships in F23+.
+Authorization (F23): unauthenticated users are sent to the auth frontend login; after F16 session cookies are present, `/interaction/:uid` completes login + auto-consent (explicit consent in F26).
+
+Token (F24): `POST /token` with `authorization_code` + PKCE issues JWT access token (`aud` = `OIDC_DEFAULT_RESOURCE`), `id_token`, and refresh token. See `scripts/oidc-pkce-token-exchange.sh`.
 
 ## Client resolution
 

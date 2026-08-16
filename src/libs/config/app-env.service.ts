@@ -62,6 +62,10 @@ export class AppEnvService {
     return this.configService.get('OIDC_ACCESS_TOKEN_TTL', { infer: true });
   }
 
+  get OIDC_DEFAULT_RESOURCE() {
+    return this.configService.get('OIDC_DEFAULT_RESOURCE', { infer: true });
+  }
+
   get OIDC_JWKS_PRIVATE_KEY_PATH() {
     return this.configService.get('OIDC_JWKS_PRIVATE_KEY_PATH', { infer: true });
   }

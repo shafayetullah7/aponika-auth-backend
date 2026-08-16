@@ -46,7 +46,7 @@ describe('mapOAuthClientToOidcPayload', () => {
 
     expect(payload).toEqual({
       client_id: 'byte-forge-web',
-      grant_types: ['authorization_code', 'refresh_token'],
+      grant_types: ['authorization_code'],
       response_types: ['code'],
       redirect_uris: ['http://localhost:3000/auth/callback'],
       post_logout_redirect_uris: ['http://localhost:3000/'],

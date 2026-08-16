@@ -1,21 +1,17 @@
 import { createServer, type Server } from 'node:http';
 import request from 'supertest';
-import type { AppEnvService } from '@/libs/config/app-env.service';
+import type { IdentityRepository } from '@/modules/identity/identity.repository';
+import { OidcAccountService } from './oidc-account.service';
 import { OidcClientRegistry } from './oidc-client.registry';
+import { OidcInteractionService } from './oidc-interaction.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcProviderFactory } from './oidc-provider.factory';
+import { OidcResourceConfigService } from './oidc-resource.config';
+import { OidcTokenClaimsService } from './oidc-token-claims.service';
 import { OIDC_ROUTE_PATHS } from './oidc-routes.constants';
+import { createTestAppEnv } from './oidc-authorize.test-utils';
 
 const ISSUER = 'http://localhost:3010';
-
-function createTestAppEnv(): AppEnvService {
-  return {
-    OIDC_ISSUER: ISSUER,
-    OIDC_ACCESS_TOKEN_TTL: 900,
-    OIDC_JWKS_PRIVATE_KEY_PATH: '',
-    JWT_USER_ACCESS_SECRET: 'dev-only-change-me-user-access-secret-32chars-min',
-  } as AppEnvService;
-}
 
 describe('OIDC discovery integration', () => {
   let server: Server;
@@ -27,7 +23,25 @@ describe('OIDC discovery integration', () => {
       findPayload: jest.fn().mockResolvedValue(undefined),
     } as unknown as OidcClientRegistry;
     const jwksService = new OidcJwksService(appEnv);
-    const factory = new OidcProviderFactory(appEnv, registry, jwksService);
+    const identityRepository = {
+      findById: jest.fn(),
+      findCredentialByUserId: jest.fn(),
+    } as unknown as IdentityRepository;
+    const accountService = new OidcAccountService(identityRepository);
+    const interactionService = new OidcInteractionService(appEnv, {
+      resolveAuthenticatedUser: jest.fn(),
+    } as never);
+    const resourceConfig = new OidcResourceConfigService(appEnv);
+    const tokenClaims = new OidcTokenClaimsService(accountService);
+    const factory = new OidcProviderFactory(
+      appEnv,
+      registry,
+      jwksService,
+      accountService,
+      interactionService,
+      resourceConfig,
+      tokenClaims,
+    );
     const provider = await factory.create();
 
     server = createServer(provider.callback());

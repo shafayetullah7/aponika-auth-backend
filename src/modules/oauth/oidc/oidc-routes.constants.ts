@@ -11,9 +11,12 @@ export const OIDC_ROUTE_PATHS = {
   revocation: '/token/revocation',
   introspection: '/token/introspection',
   endSession: '/session/end',
+  interaction: '/interaction',
   openidConfiguration: '/.well-known/openid-configuration',
   oauthAuthorizationServer: '/.well-known/oauth-authorization-server',
 } as const;
+
+export const OIDC_INTERACTION_PATH_PREFIX = OIDC_ROUTE_PATHS.interaction;
 
 /** Routes passed to oidc-provider `configuration.routes`. */
 export const OIDC_PROVIDER_ROUTES = {
@@ -40,6 +43,7 @@ export const OIDC_GLOBAL_PREFIX_EXCLUSIONS = [
   OIDC_ROUTE_PATHS.revocation.slice(1),
   OIDC_ROUTE_PATHS.introspection.slice(1),
   OIDC_ROUTE_PATHS.endSession.slice(1),
+  OIDC_ROUTE_PATHS.interaction.slice(1),
   'device',
   'request',
   'challenge',

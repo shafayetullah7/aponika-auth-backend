@@ -4,10 +4,18 @@ import {
   OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import type { Application } from 'express';
+import type { Application, NextFunction, Request, Response } from 'express';
 import { OidcBootConfigService } from './oidc-boot.config';
-import { OidcProviderFactory, OidcProviderInstance } from './oidc-provider.factory';
-import { isOidcHttpPath } from './oidc-routes.constants';
+import { OidcInteractionService } from './oidc-interaction.service';
+import {
+  OidcProviderFactory,
+  OidcProviderInstance,
+} from './oidc-provider.factory';
+import { OidcTokenAuditListener } from './oidc-token-audit.listener';
+import {
+  isOidcHttpPath,
+  OIDC_INTERACTION_PATH_PREFIX,
+} from './oidc-routes.constants';
 
 @Injectable()
 export class OidcService implements OnModuleInit {
@@ -20,11 +28,14 @@ export class OidcService implements OnModuleInit {
   constructor(
     private readonly bootConfig: OidcBootConfigService,
     private readonly providerFactory: OidcProviderFactory,
+    private readonly interactionService: OidcInteractionService,
+    private readonly tokenAuditListener: OidcTokenAuditListener,
   ) {}
 
   async onModuleInit(): Promise<void> {
     await this.bootConfig.validate();
     this.provider = await this.providerFactory.create();
+    this.tokenAuditListener.attach(this.provider);
     this.callback = this.provider.callback();
     this.logger.log(`OIDC provider initialized for ${this.provider.issuer}`);
   }
@@ -44,6 +55,15 @@ export class OidcService implements OnModuleInit {
 
     const handler = this.callback;
 
+    app.get(
+      `${OIDC_INTERACTION_PATH_PREFIX}/:uid`,
+      (req: Request, res: Response, next: NextFunction) => {
+        this.interactionService
+          .resume(req, res, this.getProvider())
+          .catch(next);
+      },
+    );
+
     app.use((req, res, next) => {
       if (!isOidcHttpPath(req.path)) {
         next();
@@ -53,6 +73,8 @@ export class OidcService implements OnModuleInit {
       handler(req, res, next);
     });
 
-    this.logger.log('OIDC discovery and protocol routes mounted at issuer root');
+    this.logger.log(
+      'OIDC discovery, authorize, and interaction routes mounted at issuer root',
+    );
   }
 }
