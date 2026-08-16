@@ -51,11 +51,23 @@ pnpm build
 pnpm lint
 pnpm typecheck
 pnpm db:migrate:docker            # run migrations inside the app container
+pnpm db:seed:docker               # seed OAuth dev clients inside the app container
 pnpm db:studio:docker             # Drizzle Studio inside the app container
 pnpm docker:purge                 # remove dev containers, volumes, and local images
 ```
 
 Migrations are user-owned: `pnpm db:generate` then `pnpm db:migrate` (or `db:migrate:docker`) after schema changes.
+
+### OAuth dev clients
+
+After migrations, seed local first-party clients (`byte-forge-web`, `byte-forge-admin`, `aponika-auth-admin`):
+
+```bash
+pnpm db:seed                  # host API, Docker Postgres on :5436
+pnpm db:seed:docker           # app running in docker:dev
+```
+
+Idempotent — existing `client_id`s are skipped. See [INTEGRATION.md](../docs/INTEGRATION.md#local-dev-clients-seed) and `src/_db/seeds/README.md`.
 
 ## Environment
 

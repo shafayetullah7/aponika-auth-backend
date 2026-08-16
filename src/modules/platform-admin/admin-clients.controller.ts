@@ -38,6 +38,7 @@ import {
 import { ListOAuthClientsQueryDto } from '@/modules/oauth/dto/list-oauth-clients.query.dto';
 import { CreateOAuthClientDto, UpdateOAuthClientDto } from '@/modules/oauth/dto/create-oauth-client.dto';
 import { OAuthClientService } from '@/modules/oauth/oauth-client.service';
+import { serializeAuditEvent } from '@/modules/audit/audit.serializer';
 
 const BYTE_FORGE_WEB_EXAMPLE = {
   clientId: 'byte-forge-web',
@@ -80,6 +81,24 @@ export class AdminClientsController {
         limit: result.limit,
         total: result.total,
       },
+    });
+  }
+
+  @ApiOperation({ summary: 'List recent audit events for OAuth client' })
+  @ApiResponse({ status: 200, description: 'Audit events for client' })
+  @ApiResponse({ status: 404, description: 'Client not found' })
+  @Get(':id/audit-events')
+  async listAuditEvents(@Param('id', ParseUUIDPipe) id: string) {
+    const lang = I18nContext.current()?.lang ?? 'en';
+    await this.oauthClientService.findById(id);
+    const events = await this.auditService.listForResource('oauth_client', id, 10);
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.oauthClientAuditListed', {
+        lang,
+        defaultValue: 'Client audit events retrieved',
+      }),
+      data: events.map(serializeAuditEvent),
     });
   }
 

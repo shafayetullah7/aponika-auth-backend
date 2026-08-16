@@ -27,6 +27,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:seed": "node -r tsconfig-paths/register -r ts-node/register src/_db/seeds/main.ts",
     "db:studio": "drizzle-kit studio",
     "docker:dev": "echo development > .compose-active-env && NODE_ENV=development docker compose --env-file .env.development up",
     "docker:dev:build": "NODE_ENV=development docker compose --env-file .env.development build --no-cache",
@@ -40,6 +41,7 @@
     "docker:db": "NODE_ENV=development docker compose --env-file .env.development up -d db",
     "docker:db:down": "NODE_ENV=development docker compose --env-file .env.development stop db",
     "db:migrate:docker": "bash -c 'ENV=$(cat .compose-active-env 2>/dev/null || echo \"${NODE_ENV:-development}\"); COMPOSE_FILES=\"-f docker-compose.yml\"; [ \"$ENV\" = \"production\" ] && COMPOSE_FILES=\"-f docker-compose.yml -f docker-compose.prod.yml\"; export NODE_ENV=\"$ENV\"; [ \"$ENV\" = \"production\" ] && export DOCKER_BUILD_TARGET=production; docker compose $COMPOSE_FILES --env-file \".env.$ENV\" exec app pnpm run db:migrate'",
+    "db:seed:docker": "bash -c 'ENV=$(cat .compose-active-env 2>/dev/null || echo \"${NODE_ENV:-development}\"); COMPOSE_FILES=\"-f docker-compose.yml\"; [ \"$ENV\" = \"production\" ] && COMPOSE_FILES=\"-f docker-compose.yml -f docker-compose.prod.yml\"; export NODE_ENV=\"$ENV\"; [ \"$ENV\" = \"production\" ] && export DOCKER_BUILD_TARGET=production; docker compose $COMPOSE_FILES --env-file \".env.$ENV\" exec app pnpm run db:seed'",
     "db:studio:docker": "bash -c 'ENV=$(cat .compose-active-env 2>/dev/null || echo \"${NODE_ENV:-development}\"); COMPOSE_FILES=\"-f docker-compose.yml\"; [ \"$ENV\" = \"production\" ] && COMPOSE_FILES=\"-f docker-compose.yml -f docker-compose.prod.yml\"; export NODE_ENV=\"$ENV\"; [ \"$ENV\" = \"production\" ] && export DOCKER_BUILD_TARGET=production; docker compose $COMPOSE_FILES --env-file \".env.$ENV\" exec app pnpm run db:studio'"
   },
   "dependencies": {

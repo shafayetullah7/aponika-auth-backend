@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { and, desc, eq } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   auditEventsTable,
@@ -22,5 +23,23 @@ export class AuditRepository {
       .returning();
 
     return row;
+  }
+
+  async listByResource(
+    resourceType: string,
+    resourceId: string,
+    limit = 10,
+  ): Promise<TAuditEvent[]> {
+    return this.drizzleService.client
+      .select()
+      .from(auditEventsTable)
+      .where(
+        and(
+          eq(auditEventsTable.resourceType, resourceType),
+          eq(auditEventsTable.resourceId, resourceId),
+        ),
+      )
+      .orderBy(desc(auditEventsTable.createdAt))
+      .limit(limit);
   }
 }

@@ -38,4 +38,12 @@ export class AuditService {
       tx,
     );
   }
+
+  async listForResource(
+    resourceType: string,
+    resourceId: string,
+    limit = 10,
+  ): Promise<TAuditEvent[]> {
+    return this.auditRepository.listByResource(resourceType, resourceId, limit);
+  }
 }
