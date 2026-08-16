@@ -44,6 +44,40 @@ export class IdentityRepository {
     return row ?? null;
   }
 
+  async findByEmailWithCredentialAndProfile(
+    email: string,
+    tx?: DrizzleTx,
+  ): Promise<TUserWithCredentialAndProfile | null> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const [row] = await executor
+      .select({
+        user: usersTable,
+        credential: userCredentialsTable,
+        profile: userProfilesTable,
+      })
+      .from(usersTable)
+      .innerJoin(
+        userCredentialsTable,
+        eq(usersTable.id, userCredentialsTable.userId),
+      )
+      .leftJoin(
+        userProfilesTable,
+        eq(usersTable.id, userProfilesTable.userId),
+      )
+      .where(eq(usersTable.email, email))
+      .limit(1);
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      user: row.user,
+      credential: row.credential,
+      profile: row.profile,
+    };
+  }
+
   async findById(
     id: string,
     tx?: DrizzleTx,
@@ -78,6 +112,48 @@ export class IdentityRepository {
       .update(userCredentialsTable)
       .set({ emailVerified: true })
       .where(eq(userCredentialsTable.userId, userId));
+  }
+
+  async updatePasswordHash(
+    userId: string,
+    passwordHash: string,
+    tx?: DrizzleTx,
+  ): Promise<void> {
+    const executor = this.drizzleService.getExecutor(tx);
+    await executor
+      .update(userCredentialsTable)
+      .set({ passwordHash })
+      .where(eq(userCredentialsTable.userId, userId));
+  }
+
+  async upsertProfileDisplayName(
+    userId: string,
+    displayName: string,
+    tx?: DrizzleTx,
+  ): Promise<TUserProfile> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const [existing] = await executor
+      .select()
+      .from(userProfilesTable)
+      .where(eq(userProfilesTable.userId, userId))
+      .limit(1);
+
+    if (existing) {
+      const [updated] = await executor
+        .update(userProfilesTable)
+        .set({ displayName })
+        .where(eq(userProfilesTable.userId, userId))
+        .returning();
+
+      return updated;
+    }
+
+    const [created] = await executor
+      .insert(userProfilesTable)
+      .values({ userId, displayName })
+      .returning();
+
+    return created;
   }
 
   async createUserWithCredential(

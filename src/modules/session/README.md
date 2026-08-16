@@ -1,10 +1,12 @@
 # Session module
 
-Admin session persistence for platform operators.
+Session persistence for platform admins and end users.
 
-**Schema:** `src/_db/drizzle/schema/session/admin-session.schema.ts`
+**Schema:** `src/_db/drizzle/schema/session/`
 
-## Table: `admin_sessions`
+## Tables
+
+### `admin_sessions` (F6)
 
 | Field | Notes |
 |-------|-------|
@@ -15,8 +17,15 @@ Admin session persistence for platform operators.
 | `revoked_at` | Set on logout / revocation |
 | `expires_at` | Session expiry |
 
-## Repository
+### `user_sessions` (F16)
 
-`AdminSessionRepository` — insert, find by id, list active by adminId, revoke, update.
+Same shape as admin sessions; `user_id` FK → `users`.
 
-Login/session HTTP API in F6.
+## Refresh token rotation (users)
+
+On `POST /api/v1/auth/refresh`, a **new refresh JWT** is issued and `refresh_token_hash` is updated. The previous refresh token becomes invalid (rotation). Admin refresh (F6) reuses the same refresh token — only access is reissued.
+
+## Repositories
+
+- `AdminSessionRepository` / `AdminSessionService`
+- `UserSessionRepository` / `UserSessionService`

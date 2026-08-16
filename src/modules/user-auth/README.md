@@ -1,13 +1,30 @@
 # User auth module
 
-End-user account registration and email verification (F15). Login/session APIs ship in F16.
+End-user registration, email verification (F15), and login/session APIs (F16).
 
 ## Routes
 
-| Method | Path |
-|--------|------|
-| `POST` | `/api/v1/auth/register` |
-| `POST` | `/api/v1/auth/verify-email` |
+| Method | Path | Auth |
+|--------|------|------|
+| `POST` | `/api/v1/auth/register` | Public |
+| `POST` | `/api/v1/auth/verify-email` | Public |
+| `POST` | `/api/v1/auth/login` | Public |
+| `POST` | `/api/v1/auth/refresh` | Cookie refresh |
+| `POST` | `/api/v1/auth/logout` | `UserAuthGuard` |
+| `GET` | `/api/v1/auth/check` | `UserAuthGuard` |
+| `GET` | `/api/v1/account/me` | `UserAuthGuard` |
+| `PATCH` | `/api/v1/account/profile` | `UserAuthGuard` |
+| `POST` | `/api/v1/account/change-password` | `UserAuthGuard` |
+
+## Cookies (auth frontend BFF)
+
+| Cookie | httpOnly | Notes |
+|--------|----------|-------|
+| `userAccessToken` | yes | Short-lived JWT |
+| `userRefreshToken` | yes | Long-lived JWT; rotated on refresh |
+| `user-xsrf-token` | no | CSRF double-submit for state-changing routes |
+
+Separate from admin cookies (`adminAccessToken`, `adminRefreshToken`, `xsrf-token`).
 
 ## Register body
 
@@ -19,11 +36,12 @@ End-user account registration and email verification (F15). Login/session APIs s
 }
 ```
 
-## Verify body
+## Login body
 
 ```json
 {
-  "token": "<token from verification email>"
+  "email": "user@example.com",
+  "password": "Password1!"
 }
 ```
 
@@ -31,16 +49,23 @@ End-user account registration and email verification (F15). Login/session APIs s
 
 1. `POST /api/v1/auth/register`
 2. Read verification URL from console mail log (`MAIL_PROVIDER=console`)
-3. `POST /api/v1/auth/verify-email` with the `token` query param value
+3. `POST /api/v1/auth/verify-email` with the `token` value
+4. `POST /api/v1/auth/login` — sets cookies
+5. `GET /api/v1/account/me` with cookies (and `x-xsrf-token` header for POST logout)
 
-## Policy: unverified users and OIDC
+## Policy: unverified users
 
-Until F16/F20 ship login and OIDC authorize:
+- New users start with `email_verified = false`.
+- **Login is rejected** until email is verified (same generic `invalidCredentials` response).
+- OIDC authorize (F20) must also reject unverified accounts.
 
-- New users are created with `user_credentials.email_verified = false`.
-- **OIDC authorize and token issuance must reject unverified accounts** once those endpoints exist (login will also require verified email before establishing a session).
-- Registration always succeeds for new emails even if mail delivery fails; the user remains unverified until `verify-email` succeeds.
+## Rate limiting
+
+In-memory login rate limit: 10 attempts per 15 minutes per `ip:email` key.
 
 ## Schema
 
-`user_email_verifications` — one-time SHA-256 hashed tokens, 24h expiry. User-owned migration required after schema change.
+- `user_email_verifications` — one-time SHA-256 hashed tokens, 24h expiry (F15)
+- `user_sessions` — refresh token hash, device info, expiry (F16)
+
+User-owned migrations required after schema changes.

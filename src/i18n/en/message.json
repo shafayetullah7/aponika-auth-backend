@@ -12,7 +12,8 @@
     "invalidCredentials": "Invalid email or password",
     "invalidEmailVerificationToken": "Invalid or expired email verification link",
     "adminRegistrationRateLimited": "Admin registration OTP can only be requested once per minute. Please try again shortly",
-    "adminLoginRateLimited": "Too many login attempts. Please try again later"
+    "adminLoginRateLimited": "Too many login attempts. Please try again later",
+    "userLoginRateLimited": "Too many login attempts. Please try again later"
   },
   "success": {
     "adminRegistrationOtpSent": "Admin registration OTP sent to the gatekeeper email",
@@ -28,6 +29,12 @@
     "oauthClientDisabled": "OAuth client disabled",
     "oauthClientEnabled": "OAuth client enabled",
     "userRegistered": "Account created. Check your email to verify your address",
-    "userEmailVerified": "Email verified successfully"
+    "userEmailVerified": "Email verified successfully",
+    "userLoggedIn": "Logged in successfully",
+    "userAuthenticated": "Authenticated",
+    "userTokenRefreshed": "Access token refreshed",
+    "userLoggedOut": "Logged out successfully",
+    "userProfileUpdated": "Profile updated successfully",
+    "userPasswordChanged": "Password changed successfully"
   }
 }

@@ -10,10 +10,15 @@ import { AuditService } from '@/modules/audit/audit.service';
 import { EmailVerificationRepository } from '@/modules/identity/email-verification.repository';
 import { IdentityRepository } from '@/modules/identity/identity.repository';
 import { MailService } from '@/libs/mail/mail.service';
+import { UserSessionService } from '@/modules/session/user-session.service';
+import { UserLoginRateLimiterService } from './user-login-rate-limiter.service';
 import { UserAuthService } from './user-auth.service';
 
 jest.mock('@/libs/crypto/password', () => ({
   hashPassword: jest.fn(async (value: string) => `hashed:${value}`),
+  verifyPassword: jest.fn(async (plain: string, hash: string) =>
+    hash === `hashed:${plain}`,
+  ),
 }));
 
 jest.mock('@/libs/verification/email-verification-token', () => ({
@@ -24,6 +29,7 @@ jest.mock('@/libs/verification/email-verification-token', () => ({
 describe('UserAuthService', () => {
   const identityRepository = {
     findByEmail: jest.fn(),
+    findByEmailWithCredentialAndProfile: jest.fn(),
     createUserWithCredential: jest.fn(),
     findCredentialByUserId: jest.fn(),
     markEmailVerified: jest.fn(),
@@ -33,6 +39,20 @@ describe('UserAuthService', () => {
     create: jest.fn(),
     findActiveByTokenHash: jest.fn(),
     markConsumed: jest.fn(),
+  };
+
+  const userSessionService = {
+    createSession: jest.fn(),
+    setRefreshTokenHash: jest.fn(),
+    getSessionWithUser: jest.fn(),
+    isSessionActive: jest.fn(),
+    revokeSession: jest.fn(),
+  };
+
+  const userLoginRateLimiter = {
+    assertCanAttempt: jest.fn(),
+    recordFailedAttempt: jest.fn(),
+    reset: jest.fn(),
   };
 
   const auditService = {
@@ -47,6 +67,18 @@ describe('UserAuthService', () => {
     transaction: jest.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
       callback('tx'),
     ),
+  };
+
+  const jwtService = {
+    signAsync: jest.fn(async () => 'signed-token'),
+    verifyAsync: jest.fn(),
+  };
+
+  const appEnv = {
+    JWT_USER_ACCESS_SECRET: 'user-access-secret',
+    JWT_USER_REFRESH_SECRET: 'user-refresh-secret',
+    JWT_USER_ACCESS_EXP: '15m',
+    JWT_USER_REFRESH_EXP: '7d',
   };
 
   const i18n = {
@@ -78,14 +110,30 @@ describe('UserAuthService', () => {
     updatedAt: new Date(),
   };
 
+  const session = {
+    id: 'session-1',
+    userId: user.id,
+    deviceInfo: {},
+    ip: '127.0.0.1',
+    refreshTokenHash: 'hashed:placeholder',
+    revokedAt: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     service = new UserAuthService(
       identityRepository as unknown as IdentityRepository,
       emailVerificationRepository as unknown as EmailVerificationRepository,
+      userSessionService as unknown as UserSessionService,
+      userLoginRateLimiter as unknown as UserLoginRateLimiterService,
       auditService as unknown as AuditService,
       mailService as unknown as MailService,
       drizzleService as unknown as DrizzleService,
+      jwtService as unknown as import('@nestjs/jwt').JwtService,
+      appEnv as never,
       i18n as unknown as I18nService,
     );
   });
@@ -234,5 +282,74 @@ describe('UserAuthService', () => {
       verification.id,
       'tx',
     );
+  });
+
+  it('logs in verified users and audits success', async () => {
+    identityRepository.findByEmailWithCredentialAndProfile.mockResolvedValue({
+      user,
+      credential: { ...credential, emailVerified: true },
+      profile,
+    });
+    userSessionService.createSession.mockResolvedValue(session);
+
+    const result = await service.login(
+      { email: user.email, password: 'Password1!' },
+      { userAgent: 'jest' },
+      '127.0.0.1',
+      'en',
+    );
+
+    expect(result.user.emailVerified).toBe(true);
+    expect(userSessionService.setRefreshTokenHash).toHaveBeenCalled();
+    expect(userLoginRateLimiter.reset).toHaveBeenCalled();
+    expect(auditService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AuditActionEnum.USER_LOGIN_SUCCESS,
+        actorId: user.id,
+      }),
+    );
+  });
+
+  it('rejects login for unverified email', async () => {
+    identityRepository.findByEmailWithCredentialAndProfile.mockResolvedValue({
+      user,
+      credential,
+      profile,
+    });
+
+    await expect(
+      service.login(
+        { email: user.email, password: 'Password1!' },
+        {},
+        '127.0.0.1',
+        'en',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: HttpStatus.UNAUTHORIZED,
+      errorCode: ErrorCode.INVALID_CREDENTIALS,
+    });
+
+    expect(userSessionService.createSession).not.toHaveBeenCalled();
+    expect(userLoginRateLimiter.recordFailedAttempt).toHaveBeenCalled();
+  });
+
+  it('rejects login with wrong password', async () => {
+    identityRepository.findByEmailWithCredentialAndProfile.mockResolvedValue({
+      user,
+      credential: { ...credential, emailVerified: true },
+      profile,
+    });
+
+    await expect(
+      service.login(
+        { email: user.email, password: 'WrongPass1!' },
+        {},
+        '127.0.0.1',
+        'en',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: HttpStatus.UNAUTHORIZED,
+      errorCode: ErrorCode.INVALID_CREDENTIALS,
+    });
   });
 });

@@ -16,6 +16,7 @@ export const AuditActionEnum = {
   USER_REGISTERED: 'user.registered',
   USER_LOGIN_SUCCESS: 'user.login.success',
   USER_LOGIN_FAILURE: 'user.login.failure',
+  USER_LOGOUT: 'user.logout',
   USER_SUSPENDED: 'user.suspended',
   USER_ACTIVATED: 'user.activated',
 

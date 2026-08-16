@@ -23,6 +23,7 @@ import { SessionModule } from './modules/session/session.module';
 import { ResponseModule } from './libs/response/response.module';
 import { CookieModule } from './libs/cookie/cookie.module';
 import { PlatformAdminAuthGuardModule } from './libs/guards/platform-admin-auth.guard.module';
+import { UserAuthGuardModule } from './libs/guards/user-auth.guard.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { PlatformAdminAuthGuardModule } from './libs/guards/platform-admin-auth.
     ResponseModule,
     CookieModule,
     PlatformAdminAuthGuardModule,
+    UserAuthGuardModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
