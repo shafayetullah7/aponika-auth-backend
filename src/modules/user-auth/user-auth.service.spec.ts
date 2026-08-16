@@ -368,4 +368,22 @@ describe('UserAuthService', () => {
       }),
     );
   });
+
+  it('rejects refresh when session is revoked', async () => {
+    jwtService.verifyAsync.mockResolvedValue({
+      sub: user.id,
+      sessionId: session.id,
+    });
+    userSessionService.getSessionWithUser.mockResolvedValue({
+      session: { ...session, revokedAt: new Date() },
+      user,
+      credential: { ...credential, emailVerified: true },
+      profile,
+    });
+    userSessionService.isSessionActive.mockReturnValue(false);
+
+    await expect(service.refreshTokens('refresh-token')).rejects.toMatchObject({
+      message: 'Session revoked or expired',
+    });
+  });
 });

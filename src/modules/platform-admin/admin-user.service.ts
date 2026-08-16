@@ -6,8 +6,10 @@ import {
   TUserWithCredentialAndProfile,
 } from '@/modules/identity/identity.repository';
 import { UserSessionRepository } from '@/modules/session/user-session.repository';
+import { TUserSession } from '@/_db/drizzle/schema/session/user-session.schema';
 import { ListAdminUsersQuery } from './dto/list-admin-users.query.dto';
-import { AdminUserNotFoundError } from './domain/admin-user.errors';
+import { ListAdminUserSessionsQuery } from './dto/list-admin-user-sessions.query.dto';
+import { AdminUserNotFoundError, AdminUserSessionNotFoundError } from './domain/admin-user.errors';
 
 @Injectable()
 export class AdminUserService {
@@ -98,6 +100,60 @@ export class AdminUserService {
     }
 
     return updated;
+  }
+
+  async listSessions(
+    userId: string,
+    query: ListAdminUserSessionsQuery,
+  ): Promise<{
+    items: TUserSession[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    await this.assertUserExists(userId);
+
+    const offset = (query.page - 1) * query.limit;
+    const [items, counts] = await Promise.all([
+      this.userSessionRepository.listByUserId(userId, {
+        limit: query.limit,
+        offset,
+      }),
+      this.userSessionRepository.countByUserId(userId),
+    ]);
+
+    return {
+      items,
+      total: counts.total,
+      page: query.page,
+      limit: query.limit,
+    };
+  }
+
+  async revokeSession(
+    userId: string,
+    sessionId: string,
+  ): Promise<TUserSession> {
+    await this.assertUserExists(userId);
+
+    const session = await this.userSessionRepository.findByIdForUser(
+      sessionId,
+      userId,
+    );
+    if (!session) {
+      throw new AdminUserSessionNotFoundError();
+    }
+
+    if (session.revokedAt) {
+      return session;
+    }
+
+    const revoked = await this.userSessionRepository.revoke(sessionId);
+    if (!revoked) {
+      throw new AdminUserSessionNotFoundError();
+    }
+
+    return revoked;
   }
 
   private async assertUserExists(

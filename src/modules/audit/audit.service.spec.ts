@@ -6,11 +6,15 @@ import { AuditService } from './audit.service';
 
 describe('AuditService', () => {
   let service: AuditService;
-  let repository: jest.Mocked<Pick<AuditRepository, 'insert'>>;
+  let repository: jest.Mocked<
+    Pick<AuditRepository, 'insert' | 'list' | 'count'>
+  >;
 
   beforeEach(async () => {
     repository = {
       insert: jest.fn(),
+      list: jest.fn(),
+      count: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -66,5 +70,34 @@ describe('AuditService', () => {
     );
     expect(result.id).toBe('event-uuid');
     expect(result.action).toBe(AuditActionEnum.CLIENT_CREATED);
+  });
+
+  it('list() returns paginated audit events', async () => {
+    repository.list.mockResolvedValue([]);
+    repository.count.mockResolvedValue(0);
+
+    const result = await service.list({
+      page: 2,
+      limit: 10,
+      action: AuditActionEnum.USER_SUSPENDED,
+      actorId: 'admin-1',
+    });
+
+    expect(result.page).toBe(2);
+    expect(result.limit).toBe(10);
+    expect(repository.list).toHaveBeenCalledWith({
+      limit: 10,
+      offset: 10,
+      action: AuditActionEnum.USER_SUSPENDED,
+      actorId: 'admin-1',
+      from: undefined,
+      to: undefined,
+    });
+    expect(repository.count).toHaveBeenCalledWith({
+      action: AuditActionEnum.USER_SUSPENDED,
+      actorId: 'admin-1',
+      from: undefined,
+      to: undefined,
+    });
   });
 });

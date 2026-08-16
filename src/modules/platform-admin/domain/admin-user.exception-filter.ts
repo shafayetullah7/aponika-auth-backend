@@ -6,11 +6,17 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ErrorCode } from '@/libs/response/error.schema';
-import { AdminUserNotFoundError } from './admin-user.errors';
+import {
+  AdminUserNotFoundError,
+  AdminUserSessionNotFoundError,
+} from './admin-user.errors';
 
-@Catch(AdminUserNotFoundError)
+@Catch(AdminUserNotFoundError, AdminUserSessionNotFoundError)
 export class AdminUserExceptionFilter implements ExceptionFilter {
-  catch(exception: AdminUserNotFoundError, host: ArgumentsHost): void {
+  catch(
+    exception: AdminUserNotFoundError | AdminUserSessionNotFoundError,
+    host: ArgumentsHost,
+  ): void {
     const response = host.switchToHttp().getResponse<Response>();
 
     response.status(HttpStatus.NOT_FOUND).json({

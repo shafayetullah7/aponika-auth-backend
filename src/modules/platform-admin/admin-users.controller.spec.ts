@@ -14,6 +14,8 @@ describe('AdminUsersController', () => {
     findById: jest.fn(),
     suspend: jest.fn(),
     activate: jest.fn(),
+    listSessions: jest.fn(),
+    revokeSession: jest.fn(),
   };
   const auditService = {
     record: jest.fn(),
@@ -115,6 +117,67 @@ describe('AdminUsersController', () => {
     expect(result.data.status).toBe(UserStatusEnum.SUSPENDED);
     expect(auditService.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.suspended' }),
+    );
+  });
+
+  it('lists user sessions with pagination meta', async () => {
+    adminUserService.listSessions.mockResolvedValue({
+      items: [
+        {
+          id: 'session-1',
+          userId: 'user-1',
+          deviceInfo: { userAgent: 'test' },
+          ip: '127.0.0.1',
+          refreshTokenHash: 'hash',
+          revokedAt: null,
+          expiresAt: new Date('2027-01-01T00:00:00.000Z'),
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+    });
+
+    const result = await controller.listSessions('user-1', {
+      page: 1,
+      limit: 20,
+    } as never);
+
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].status).toBe('active');
+    expect(result.meta).toEqual({ page: 1, limit: 20, total: 1, pages: 1 });
+  });
+
+  it('revokes a session and records audit', async () => {
+    adminUserService.revokeSession.mockResolvedValue({
+      id: 'session-1',
+      userId: 'user-1',
+      deviceInfo: {},
+      ip: null,
+      refreshTokenHash: 'hash',
+      revokedAt: new Date('2026-01-02T00:00:00.000Z'),
+      expiresAt: new Date('2027-01-01T00:00:00.000Z'),
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+    });
+
+    const auth = {
+      admin: { id: 'admin-1' },
+      session: { id: 'admin-session-1' },
+    } as never;
+
+    const result = await controller.revokeSession(
+      'user-1',
+      'session-1',
+      auth,
+      { headers: {}, socket: { remoteAddress: '127.0.0.1' } } as never,
+    );
+
+    expect(result.data.status).toBe('revoked');
+    expect(auditService.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'user.session.revoked' }),
     );
   });
 });

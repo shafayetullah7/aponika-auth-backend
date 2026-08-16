@@ -6,6 +6,7 @@ import { MailModule } from '@/libs/mail/mail.module';
 import { OtpService } from '@/libs/otp/otp.service';
 import { SessionModule } from '@/modules/session/session.module';
 import { OAuthModule } from '@/modules/oauth/oauth.module';
+import { AdminAuditEventsController } from './admin-audit-events.controller';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminClientsController } from './admin-clients.controller';
 import { AdminUserService } from './admin-user.service';
@@ -21,7 +22,7 @@ import { PlatformAdminRepository } from './platform-admin.repository';
 
 @Module({
   imports: [AuditModule, IdentityModule, MailModule, SessionModule, OAuthModule, JwtModule.register({})],
-  controllers: [AdminAuthController, AdminClientsController, AdminUsersController],
+  controllers: [AdminAuthController, AdminClientsController, AdminUsersController, AdminAuditEventsController],
   providers: [
     PlatformAdminRepository,
     PlatformAdminLocalAuthRepository,

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -26,7 +27,9 @@ import {
   serializeAdminUserDetail,
   serializeAdminUserSummary,
 } from './domain/admin-user.serializer';
+import { serializeAdminUserSession } from './domain/admin-user-session.serializer';
 import { ListAdminUsersQueryDto } from './dto/list-admin-users.query.dto';
+import { ListAdminUserSessionsQueryDto } from './dto/list-admin-user-sessions.query.dto';
 
 @ApiTags('Admin Users')
 @Controller({ path: 'admin/users', version: '1' })
@@ -55,6 +58,57 @@ export class AdminUsersController {
         limit: result.limit,
         total: result.total,
       },
+    });
+  }
+
+  @ApiOperation({ summary: 'List user sessions' })
+  @ApiResponse({ status: 200, description: 'Paginated session list' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @Get(':id/sessions')
+  async listSessions(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ListAdminUserSessionsQueryDto,
+  ) {
+    const lang = I18nContext.current()?.lang ?? 'en';
+    const result = await this.adminUserService.listSessions(id, query);
+
+    return this.responseService.paginated({
+      message: this.i18n.t('message.success.adminUserSessionsListed', { lang }),
+      data: result.items.map(serializeAdminUserSession),
+      meta: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+      },
+    });
+  }
+
+  @ApiOperation({ summary: 'Revoke user session' })
+  @ApiResponse({ status: 200, description: 'Session revoked' })
+  @ApiResponse({ status: 404, description: 'User or session not found' })
+  @Delete(':id/sessions/:sessionId')
+  async revokeSession(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @CurrentAdmin() auth: AuthenticatedPlatformAdmin,
+    @Req() req: Request,
+  ) {
+    const lang = I18nContext.current()?.lang ?? 'en';
+    const session = await this.adminUserService.revokeSession(id, sessionId);
+
+    await this.auditService.record({
+      actorType: AuditActorTypeEnum.PLATFORM_ADMIN,
+      actorId: auth.admin.id,
+      action: AuditActionEnum.USER_SESSION_REVOKED,
+      resourceType: 'user_session',
+      resourceId: session.id,
+      metadata: { userId: id },
+      ip: getClientIp(req),
+    });
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.adminUserSessionRevoked', { lang }),
+      data: serializeAdminUserSession(session),
     });
   }
 

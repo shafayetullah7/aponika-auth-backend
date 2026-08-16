@@ -19,6 +19,7 @@ export const AuditActionEnum = {
   USER_LOGOUT: 'user.logout',
   USER_SUSPENDED: 'user.suspended',
   USER_ACTIVATED: 'user.activated',
+  USER_SESSION_REVOKED: 'user.session.revoked',
 
   OIDC_TOKEN_ISSUED: 'oidc.token.issued',
 } as const;

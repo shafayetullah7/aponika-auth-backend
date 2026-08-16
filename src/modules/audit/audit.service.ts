@@ -3,7 +3,7 @@ import { AuditActionEnum, TAuditAction } from '@/_db/drizzle/enum/audit-action.e
 import { TAuditActorType } from '@/_db/drizzle/enum/audit-actor-type.enum';
 import { TAuditEvent } from '@/_db/drizzle/schema/audit/audit-event.schema';
 import { DrizzleTx } from '@/_db/drizzle/types';
-import { AuditRepository } from './audit.repository';
+import { AuditRepository, ListAuditEventsFilter } from './audit.repository';
 
 export interface RecordAuditEventInput {
   actorType: TAuditActorType;
@@ -52,5 +52,43 @@ export class AuditService {
       userId,
       AuditActionEnum.USER_LOGIN_SUCCESS,
     );
+  }
+
+  async list(query: {
+    page: number;
+    limit: number;
+    action?: string;
+    actorId?: string;
+    from?: Date;
+    to?: Date;
+  }): Promise<{
+    items: TAuditEvent[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const offset = (query.page - 1) * query.limit;
+    const baseFilter = {
+      action: query.action,
+      actorId: query.actorId,
+      from: query.from,
+      to: query.to,
+    };
+
+    const [items, total] = await Promise.all([
+      this.auditRepository.list({
+        ...baseFilter,
+        limit: query.limit,
+        offset,
+      }),
+      this.auditRepository.count(baseFilter),
+    ]);
+
+    return {
+      items,
+      total,
+      page: query.page,
+      limit: query.limit,
+    };
   }
 }

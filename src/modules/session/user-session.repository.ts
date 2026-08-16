@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { and, count, eq, gt, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, gt, isNull } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   TUser,
@@ -78,6 +78,41 @@ export class UserSessionRepository {
       .limit(1);
 
     return row ?? null;
+  }
+
+  async findByIdForUser(
+    sessionId: string,
+    userId: string,
+    tx?: DrizzleTx,
+  ): Promise<TUserSession | null> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const [row] = await executor
+      .select()
+      .from(userSessionsTable)
+      .where(
+        and(
+          eq(userSessionsTable.id, sessionId),
+          eq(userSessionsTable.userId, userId),
+        ),
+      )
+      .limit(1);
+
+    return row ?? null;
+  }
+
+  async listByUserId(
+    userId: string,
+    options: { limit: number; offset: number },
+    tx?: DrizzleTx,
+  ): Promise<TUserSession[]> {
+    const executor = this.drizzleService.getExecutor(tx);
+    return executor
+      .select()
+      .from(userSessionsTable)
+      .where(eq(userSessionsTable.userId, userId))
+      .orderBy(desc(userSessionsTable.createdAt))
+      .limit(options.limit)
+      .offset(options.offset);
   }
 
   async findActiveByUserId(
