@@ -1,0 +1,35 @@
+---
+description: Folder structure and naming — modular monolith (aponika-auth-backend)
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Structure and Naming Rules
+
+## Where code lives
+
+- **Domain features:** `src/modules/{domain}/`
+  - `controllers/` — HTTP (public, account, platform-admin prefixes)
+  - `application/commands/` — mutations
+  - `application/queries/` — reads / list DTOs
+  - `domain/` — entities, enums, policies
+  - `repositories/` — only Drizzle access
+  - `dto/`, `mappers/`
+- **Infrastructure:** `src/libs/` (config, guards, response — no domain rules)
+- **Schema:** `src/_db/drizzle/schema/{domain}/` — repos in owning module only
+
+## Domains
+
+`identity`, `oauth`, `session`, `platform-admin`, `audit`
+
+## Naming
+
+- `*.controller.ts`, `*.module.ts`
+- Commands: `register-user.command.ts`, `revoke-session.command.ts`
+- Queries: `get-user-by-id.query.ts`, `list-oauth-clients.query.ts`
+- `dto/*.dto.ts`
+- Repositories: `{aggregate}.repository.ts`
+
+## Reuse
+
+Reuse existing helpers in `src/libs/` before creating duplicates.

@@ -1,0 +1,8 @@
+{
+  "validation": {
+    "error": "Validation failed"
+  },
+  "common": {
+    "internalError": "Something went wrong"
+  }
+}

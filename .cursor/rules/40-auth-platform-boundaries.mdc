@@ -1,0 +1,26 @@
+---
+description: Auth platform boundaries — no marketplace domain
+alwaysApply: true
+---
+
+# Auth Platform Boundaries
+
+This repo is the **identity platform**, not Byte Forge marketplace.
+
+## Own here
+
+- End-user identity (accounts, credentials, MFA)
+- OIDC/OAuth2 issuer (clients, tokens, JWKS)
+- Sessions and refresh token lifecycle
+- Platform operator admin APIs
+- Security audit log
+
+## Do not add here
+
+- Shops, products, orders, carts, campaigns, subscriptions
+- Marketplace seller/buyer authorization (consumer apps own domain RBAC)
+- Payment processing, Stripe, Cloudinary, plant catalog
+
+## Integration
+
+Consumer apps (Byte Forge) authenticate via OIDC and map `sub` → local `user_identities`. Keep that mapping in the consumer app, not in this repo.

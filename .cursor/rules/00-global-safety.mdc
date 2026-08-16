@@ -1,0 +1,13 @@
+---
+description: Global safety rules for aponika-auth-backend
+alwaysApply: true
+---
+
+# Global Safety Rules
+
+- Never commit secrets, credentials, or env files.
+- Keep edits scoped to the requested feature; avoid opportunistic refactors.
+- Preserve API contracts unless task explicitly allows contract change.
+- Prefer consistency with existing module patterns over introducing new style.
+- For stateful mutations, prioritize correctness and transactional safety.
+- Do not add marketplace domain tables (shops, orders, products, campaigns).

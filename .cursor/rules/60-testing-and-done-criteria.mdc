@@ -1,0 +1,15 @@
+---
+description: Testing and done criteria
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Testing and Done Criteria Rules
+
+A backend change is complete only when:
+
+- Typecheck passes (`pnpm typecheck`)
+- Lint passes for touched files (`pnpm lint`)
+- Relevant tests are executed for changed behavior
+- i18n updates are present in both locales when needed
+- API contract remains stable unless change is explicitly planned

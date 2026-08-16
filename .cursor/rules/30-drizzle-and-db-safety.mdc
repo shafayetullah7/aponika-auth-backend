@@ -1,0 +1,16 @@
+---
+description: Drizzle and database safety
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Drizzle and DB Safety Rules
+
+- Update schema source under `src/_db/drizzle/schema/{domain}/` for data model changes (barrel `index.ts` per domain).
+- **Only repositories in the owning module** may import that domain's schema. Application services and controllers must not.
+- Keep enums centralized in `src/_db/drizzle/enum/` and reused from drizzle enum files.
+- Do not hand-edit generated migration snapshots/journal.
+- **Do not run `db:generate` / `db:migrate`** — user owns migrations.
+- **Only repositories** execute Drizzle queries. Services may call `drizzleService.transaction()` but pass `tx` to repos.
+- All statements inside a transaction must use `getExecutor(tx)`, not `db.client`.
+- ESLint warns on `@/_db/drizzle/schema` imports outside repositories (`no-restricted-imports`, warn).

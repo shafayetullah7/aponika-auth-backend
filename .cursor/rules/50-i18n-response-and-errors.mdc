@@ -1,0 +1,15 @@
+---
+description: i18n, response, and error conventions
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# i18n, Response, and Error Rules
+
+- Resolve user-facing messages through i18n keys.
+- Add keys in both:
+  - `src/i18n/en/message.json`
+  - `src/i18n/bn/message.json`
+- Avoid hardcoded response text in controllers/services.
+- Throw explicit Nest exceptions by failure type.
+- Never return raw internal SQL/stack details to clients.

@@ -1,0 +1,13 @@
+---
+description: API and DTO conventions
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# API and DTO Rules
+
+- Controllers must stay thin and delegate business logic to services.
+- Validate non-trivial request inputs using DTOs.
+- Prefer zod-backed DTOs with `createZodDto`.
+- Keep route naming and response shape consistent with neighboring modules.
+- Use response wrapper service for consistent success/paginated payloads when added.

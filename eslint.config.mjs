@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.mjs', 'dist/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -29,7 +29,31 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+    },
+  },
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/_db/**', '**/repositories/**'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          paths: [
+            {
+              name: '@/_db/drizzle/schema',
+              message:
+                'Schema is module-owned. Import only from repositories in the owning module.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@/_db/drizzle/schema/*'],
+              message:
+                'Schema is module-owned. Import only from repositories in the owning module.',
+            },
+          ],
+        },
+      ],
     },
   },
 );
