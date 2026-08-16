@@ -12,6 +12,11 @@ export interface EmailVerificationMailInput {
   displayName?: string | null;
 }
 
+export interface PasswordResetOtpMailInput {
+  to: string;
+  otp: string;
+}
+
 export interface MailMessage {
   to: string;
   subject: string;

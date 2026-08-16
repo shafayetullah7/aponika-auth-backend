@@ -14,7 +14,9 @@
     "adminRegistrationRateLimited": "Admin registration OTP can only be requested once per minute. Please try again shortly",
     "adminLoginRateLimited": "Too many login attempts. Please try again later",
     "userLoginRateLimited": "Too many login attempts. Please try again later",
-    "userRegistrationRateLimited": "Too many registration attempts. Please try again later"
+    "userRegistrationRateLimited": "Too many registration attempts. Please try again later",
+    "passwordResetRateLimited": "Too many password reset attempts. Please try again later",
+    "passwordResetOtpCooldown": "Password reset code can only be requested once per minute. Please try again shortly"
   },
   "success": {
     "adminRegistrationOtpSent": "Admin registration OTP sent to the gatekeeper email",
@@ -43,6 +45,9 @@
     "userTokenRefreshed": "Access token refreshed",
     "userLoggedOut": "Logged out successfully",
     "userProfileUpdated": "Profile updated successfully",
-    "userPasswordChanged": "Password changed successfully"
+    "userPasswordChanged": "Password changed successfully",
+    "passwordResetRequested": "If an account exists for that email, a reset code has been sent",
+    "passwordResetOtpVerified": "Code verified — choose a new password",
+    "passwordResetCompleted": "Password reset successfully"
   }
 }

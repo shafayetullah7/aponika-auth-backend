@@ -58,6 +58,9 @@ export const envSchema = z.object({
   JWT_USER_REFRESH_SECRET: jwtSecret,
   JWT_USER_REFRESH_EXP: durationString.default('7d'),
 
+  JWT_SECRET_RESET_REQUEST: jwtSecret,
+  JWT_SECRET_RESET_ACCESS: jwtSecret,
+
   /** Gatekeeper inbox for admin registration OTP (F5). */
   ADMIN_REGISTRATION_OTP_EMAIL: z.string().email(),
 

@@ -20,6 +20,7 @@ import { OAuthModule } from './modules/oauth/oauth.module';
 import { OidcModule } from './modules/oauth/oidc/oidc.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { UserAuthModule } from './modules/user-auth/user-auth.module';
+import { PasswordResetModule } from './modules/password-reset/password-reset.module';
 import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
 import { ExampleModule } from './modules/example/example.module';
 import { SessionModule } from './modules/session/session.module';
@@ -50,6 +51,7 @@ import { UserAuthGuardModule } from './libs/guards/user-auth.guard.module';
     OidcModule,
     IdentityModule,
     UserAuthModule,
+    PasswordResetModule,
     PlatformAdminModule,
     ExampleModule,
     SessionModule,

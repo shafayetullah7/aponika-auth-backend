@@ -6,6 +6,7 @@ import {
   AdminRegistrationOtpMailInput,
   EmailVerificationMailInput,
   MailProvider,
+  PasswordResetOtpMailInput,
 } from './mail.types';
 
 @Injectable()
@@ -51,6 +52,21 @@ export class MailService {
         `Verify your email: ${verifyUrl}`,
         `token=${input.token}`,
       ].join(' '),
+    });
+  }
+
+  async sendPasswordResetOtp(input: PasswordResetOtpMailInput): Promise<void> {
+    await this.getProvider().send({
+      to: input.to,
+      subject: 'Password reset code — Aponika',
+      text: [
+        'You requested a password reset for your Aponika account.',
+        '',
+        `Your one-time code: ${input.otp}`,
+        '',
+        'Enter this code in the password reset form. It expires in a few minutes.',
+        'If you did not request this, you can ignore this email.',
+      ].join('\n'),
     });
   }
 

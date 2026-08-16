@@ -20,6 +20,8 @@ export const AuditActionEnum = {
   USER_SUSPENDED: 'user.suspended',
   USER_ACTIVATED: 'user.activated',
   USER_SESSION_REVOKED: 'user.session.revoked',
+  USER_PASSWORD_RESET_REQUESTED: 'user.password_reset.requested',
+  USER_PASSWORD_RESET_COMPLETED: 'user.password_reset.completed',
 
   OIDC_TOKEN_ISSUED: 'oidc.token.issued',
 } as const;

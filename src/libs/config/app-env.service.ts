@@ -114,6 +114,14 @@ export class AppEnvService {
     return this.configService.get('JWT_USER_REFRESH_EXP', { infer: true });
   }
 
+  get JWT_SECRET_RESET_REQUEST() {
+    return this.configService.get('JWT_SECRET_RESET_REQUEST', { infer: true });
+  }
+
+  get JWT_SECRET_RESET_ACCESS() {
+    return this.configService.get('JWT_SECRET_RESET_ACCESS', { infer: true });
+  }
+
   get ADMIN_REGISTRATION_OTP_EMAIL() {
     return this.configService.get('ADMIN_REGISTRATION_OTP_EMAIL', {
       infer: true,
