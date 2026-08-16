@@ -28,8 +28,19 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "db:studio": "drizzle-kit studio",
-    "docker:db": "docker compose --env-file .env.development up -d db",
-    "docker:db:down": "docker compose --env-file .env.development down"
+    "docker:dev": "echo development > .compose-active-env && NODE_ENV=development docker compose --env-file .env.development up",
+    "docker:dev:build": "NODE_ENV=development docker compose --env-file .env.development build --no-cache",
+    "docker:prod": "echo production > .compose-active-env && NODE_ENV=production DOCKER_BUILD_TARGET=production docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d --build --remove-orphans",
+    "docker:prod:build": "NODE_ENV=production DOCKER_BUILD_TARGET=production docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production build --no-cache",
+    "docker:prod:down": "NODE_ENV=production DOCKER_BUILD_TARGET=production docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production down && rm -f .compose-active-env",
+    "docker:down": "NODE_ENV=development docker compose --env-file .env.development down && rm -f .compose-active-env",
+    "docker:logs": "docker compose logs -f app",
+    "docker:logs:prod": "NODE_ENV=production docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production logs -f app",
+    "docker:purge": "NODE_ENV=development docker compose --env-file .env.development down -v --remove-orphans --rmi local && rm -f .compose-active-env",
+    "docker:db": "NODE_ENV=development docker compose --env-file .env.development up -d db",
+    "docker:db:down": "NODE_ENV=development docker compose --env-file .env.development stop db",
+    "db:migrate:docker": "bash -c 'ENV=$(cat .compose-active-env 2>/dev/null || echo \"${NODE_ENV:-development}\"); COMPOSE_FILES=\"-f docker-compose.yml\"; [ \"$ENV\" = \"production\" ] && COMPOSE_FILES=\"-f docker-compose.yml -f docker-compose.prod.yml\"; export NODE_ENV=\"$ENV\"; [ \"$ENV\" = \"production\" ] && export DOCKER_BUILD_TARGET=production; docker compose $COMPOSE_FILES --env-file \".env.$ENV\" exec app pnpm run db:migrate'",
+    "db:studio:docker": "bash -c 'ENV=$(cat .compose-active-env 2>/dev/null || echo \"${NODE_ENV:-development}\"); COMPOSE_FILES=\"-f docker-compose.yml\"; [ \"$ENV\" = \"production\" ] && COMPOSE_FILES=\"-f docker-compose.yml -f docker-compose.prod.yml\"; export NODE_ENV=\"$ENV\"; [ \"$ENV\" = \"production\" ] && export DOCKER_BUILD_TARGET=production; docker compose $COMPOSE_FILES --env-file \".env.$ENV\" exec app pnpm run db:studio'"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.8",

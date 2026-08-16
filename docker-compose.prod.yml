@@ -1,0 +1,4 @@
+# Production overrides: use the built image as-is (no host bind mounts).
+services:
+  app:
+    volumes: !reset []
