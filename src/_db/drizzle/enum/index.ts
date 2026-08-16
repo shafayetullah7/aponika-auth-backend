@@ -4,3 +4,5 @@ export * from './audit-action.enum';
 export * from './oauth-client-type.enum';
 export * from './oauth-client-status.enum';
 export * from './oauth-client-uri-kind.enum';
+export * from './platform-admin-status.enum';
+export * from './platform-admin-role.enum';

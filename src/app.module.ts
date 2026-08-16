@@ -16,6 +16,8 @@ import { AppConfigModule } from './libs/config/app-config.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { OAuthModule } from './modules/oauth/oauth.module';
+import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
+import { SessionModule } from './modules/session/session.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { OAuthModule } from './modules/oauth/oauth.module';
     PlatformModule,
     AuditModule,
     OAuthModule,
+    PlatformAdminModule,
+    SessionModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {

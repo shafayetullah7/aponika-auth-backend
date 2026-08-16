@@ -1,7 +1,26 @@
 # Platform admin module
 
-Operator APIs: platform users, roles, OAuth client administration.
+Operator identity: platform admins, local credentials, registration OTP state.
 
-**Schema domain:** `src/_db/drizzle/schema/platform-admin/` (Phase 3)
+**Schema domain:** `src/_db/drizzle/schema/platform-admin/`  
+**Sessions:** `src/_db/drizzle/schema/session/admin-session.schema.ts`
 
 Not the Byte Forge marketplace admin (`byte-forge-admin`).
+
+## Tables
+
+| Table | Purpose |
+|-------|---------|
+| `platform_admins` | Profile: name, `user_name`, `email`, `status`, `role` |
+| `platform_admin_local_auth` | Password hash + `verified` flag (1:1 with admin) |
+| `admin_registration_attempts` | Pending gatekeeper OTP registrations |
+| `admin_registration_rate_limit` | Singleton global OTP throttle (`id = global`) |
+
+## Repositories
+
+- `PlatformAdminRepository` — insert, find by id/email/userName, update
+- `PlatformAdminLocalAuthRepository` — insert, find by adminId, update
+- `AdminRegistrationAttemptRepository` — insert, find by email/userName, delete
+- `AdminRegistrationRateLimitRepository` — find/upsert global throttle row
+
+HTTP and services arrive in F5 (registration OTP) and F6 (login/session).

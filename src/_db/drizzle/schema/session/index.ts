@@ -1,2 +1,1 @@
-// Tables: sessions, refresh_tokens — added in session feature epic.
-export {};
+export * from './admin-session.schema';
