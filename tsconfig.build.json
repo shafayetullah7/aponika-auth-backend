@@ -8,6 +8,5 @@
     "drizzle.config.ts",
     "eslint.config.mjs"
   ],
-  "include": ["src/**/*"],
-  "ignoreDeprecations": "6.0"
+  "include": ["src/**/*"]
 }

@@ -10,7 +10,6 @@
     "target": "esnext",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/libs/*": ["./src/libs/*"],
@@ -27,6 +26,5 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false,
     "types": ["node", "jest"]
-  },
-  "ignoreDeprecations": "6.0"
+  }
 }
