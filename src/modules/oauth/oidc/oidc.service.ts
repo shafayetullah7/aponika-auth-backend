@@ -24,6 +24,7 @@ export class OidcService implements OnModuleInit {
   private callback:
     | ((req: unknown, res: unknown, next?: () => void) => void)
     | null = null;
+  private initPromise: Promise<void> | null = null;
 
   constructor(
     private readonly bootConfig: OidcBootConfigService,
@@ -33,6 +34,22 @@ export class OidcService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    await this.initialize();
+  }
+
+  private initialize(): Promise<void> {
+    if (!this.initPromise) {
+      this.initPromise = this.doInitialize().catch((error: unknown) => {
+        this.initPromise = null;
+        this.logger.error('OIDC provider initialization failed', error);
+        throw error;
+      });
+    }
+
+    return this.initPromise;
+  }
+
+  private async doInitialize(): Promise<void> {
     await this.bootConfig.validate();
     this.provider = await this.providerFactory.create();
     this.tokenAuditListener.attach(this.provider);
@@ -48,7 +65,9 @@ export class OidcService implements OnModuleInit {
     return this.provider;
   }
 
-  mountOnExpress(app: Application): void {
+  async mountOnExpress(app: Application): Promise<void> {
+    await this.initialize();
+
     if (!this.callback) {
       throw new ServiceUnavailableException('OIDC provider is not initialized');
     }

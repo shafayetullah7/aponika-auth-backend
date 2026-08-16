@@ -16,6 +16,7 @@ import { AppConfigModule } from './libs/config/app-config.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { OAuthModule } from './modules/oauth/oauth.module';
+import { OidcModule } from './modules/oauth/oidc/oidc.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { UserAuthModule } from './modules/user-auth/user-auth.module';
 import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
@@ -43,6 +44,7 @@ import { UserAuthGuardModule } from './libs/guards/user-auth.guard.module';
     PlatformModule,
     AuditModule,
     OAuthModule,
+    OidcModule,
     IdentityModule,
     UserAuthModule,
     PlatformAdminModule,

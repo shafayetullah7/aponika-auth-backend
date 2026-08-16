@@ -32,7 +32,9 @@ async function bootstrap() {
   });
 
   const oidcService = app.get(OidcService);
-  oidcService.mountOnExpress(app.getHttpAdapter().getInstance() as Application);
+  await oidcService.mountOnExpress(
+    app.getHttpAdapter().getInstance() as Application,
+  );
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Aponika Auth API')
