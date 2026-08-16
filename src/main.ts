@@ -2,9 +2,11 @@ import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import type { Application } from 'express';
 import { AppModule } from './app.module';
 import { AppEnvService } from './libs/config/app-env.service';
 import { getAllowedOrigins } from './libs/security/allowed-origins';
+import { OidcService } from './modules/oauth/oidc/oidc.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -25,6 +27,9 @@ async function bootstrap() {
     origin: getAllowedOrigins(appEnv),
     credentials: true,
   });
+
+  const oidcService = app.get(OidcService);
+  oidcService.mountOnExpress(app.getHttpAdapter().getInstance() as Application);
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Aponika Auth API')

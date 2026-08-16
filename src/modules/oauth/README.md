@@ -2,7 +2,8 @@
 
 OIDC/OAuth2 provider: clients, authorization codes, tokens, JWKS, consent.
 
-**Schema domain:** `src/_db/drizzle/schema/oauth/`
+**Schema domain:** `src/_db/drizzle/schema/oauth/`  
+**OIDC provider bootstrap (F21):** `oidc/` — see [oidc/README.md](./oidc/README.md)
 
 ## F2 — OAuth client registry (schema + repository)
 

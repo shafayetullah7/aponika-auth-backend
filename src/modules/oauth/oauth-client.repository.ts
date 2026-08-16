@@ -103,6 +103,19 @@ export class OAuthClientRepository {
     return row ?? null;
   }
 
+  async findByClientIdWithUris(
+    clientId: string,
+    tx?: DrizzleTx,
+  ): Promise<TOAuthClientWithUris | null> {
+    const client = await this.findByClientId(clientId, tx);
+    if (!client) {
+      return null;
+    }
+
+    const uris = await this.findUrisByClientId(client.id, tx);
+    return { client, uris };
+  }
+
   async findUrisByClientId(
     oauthClientId: string,
     tx?: DrizzleTx,
