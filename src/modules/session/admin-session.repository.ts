@@ -1,12 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { and, eq, isNull } from 'drizzle-orm';
 import { DrizzleService } from '@/_db/drizzle/drizzle.service';
+import { platformAdminsTable } from '@/_db/drizzle/schema/platform-admin/platform-admin.schema';
 import {
   adminSessionsTable,
   TAdminSession,
   TNewAdminSession,
 } from '@/_db/drizzle/schema/session/admin-session.schema';
+import { TPlatformAdmin } from '@/_db/drizzle/schema/platform-admin/platform-admin.schema';
 import { DrizzleTx } from '@/_db/drizzle/types';
+
+export type AdminSessionWithAdmin = {
+  session: TAdminSession;
+  admin: TPlatformAdmin;
+};
+
+export function isAdminSessionActive(session: TAdminSession): boolean {
+  return !session.revokedAt && session.expiresAt.getTime() > Date.now();
+}
 
 @Injectable()
 export class AdminSessionRepository {
@@ -30,6 +41,27 @@ export class AdminSessionRepository {
     const [row] = await executor
       .select()
       .from(adminSessionsTable)
+      .where(eq(adminSessionsTable.id, id))
+      .limit(1);
+
+    return row ?? null;
+  }
+
+  async findByIdWithAdmin(
+    id: string,
+    tx?: DrizzleTx,
+  ): Promise<AdminSessionWithAdmin | null> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const [row] = await executor
+      .select({
+        session: adminSessionsTable,
+        admin: platformAdminsTable,
+      })
+      .from(adminSessionsTable)
+      .innerJoin(
+        platformAdminsTable,
+        eq(adminSessionsTable.adminId, platformAdminsTable.id),
+      )
       .where(eq(adminSessionsTable.id, id))
       .limit(1);
 

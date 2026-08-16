@@ -18,10 +18,16 @@ import { AuditModule } from './modules/audit/audit.module';
 import { OAuthModule } from './modules/oauth/oauth.module';
 import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
 import { SessionModule } from './modules/session/session.module';
+import { ResponseModule } from './libs/response/response.module';
+import { CookieModule } from './libs/cookie/cookie.module';
+import { PlatformAdminAuthGuardModule } from './libs/guards/platform-admin-auth.guard.module';
 
 @Module({
   imports: [
     DrizzleModule,
+    ResponseModule,
+    CookieModule,
+    PlatformAdminAuthGuardModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],

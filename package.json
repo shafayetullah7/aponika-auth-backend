@@ -46,9 +46,10 @@
     "@nestjs/common": "^11.1.8",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.8",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.1.8",
     "@nestjs/swagger": "^11.2.6",
-    "bcrypt": "^6.0.0",
+    "argon2": "^0.45.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.9",
@@ -66,7 +67,6 @@
     "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.1.8",
-    "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
@@ -111,6 +111,9 @@
   "pnpm": {
     "overrides": {
       "drizzle-orm": "0.44.7"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "argon2"
+    ]
   }
 }

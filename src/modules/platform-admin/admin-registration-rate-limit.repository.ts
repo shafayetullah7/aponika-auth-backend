@@ -4,8 +4,6 @@ import { DrizzleService } from '@/_db/drizzle/drizzle.service';
 import {
   ADMIN_REGISTRATION_RATE_LIMIT_GLOBAL_ID,
   adminRegistrationRateLimitTable,
-  TAdminRegistrationRateLimit,
-  TNewAdminRegistrationRateLimit,
 } from '@/_db/drizzle/schema/platform-admin/admin-registration-rate-limit.schema';
 import { DrizzleTx } from '@/_db/drizzle/types';
 
@@ -13,10 +11,11 @@ import { DrizzleTx } from '@/_db/drizzle/types';
 export class AdminRegistrationRateLimitRepository {
   constructor(private readonly drizzleService: DrizzleService) {}
 
-  async findGlobal(tx?: DrizzleTx): Promise<TAdminRegistrationRateLimit | null> {
-    const executor = this.drizzleService.getExecutor(tx);
-    const [row] = await executor
-      .select()
+  async getLastOtpSentAtForUpdate(tx: DrizzleTx): Promise<Date | null> {
+    const [row] = await tx
+      .select({
+        lastOtpSentAt: adminRegistrationRateLimitTable.lastOtpSentAt,
+      })
       .from(adminRegistrationRateLimitTable)
       .where(
         eq(
@@ -24,30 +23,22 @@ export class AdminRegistrationRateLimitRepository {
           ADMIN_REGISTRATION_RATE_LIMIT_GLOBAL_ID,
         ),
       )
-      .limit(1);
+      .limit(1)
+      .for('update');
 
-    return row ?? null;
+    return row?.lastOtpSentAt ?? null;
   }
 
-  async upsertGlobal(
-    data: Pick<TNewAdminRegistrationRateLimit, 'lastOtpSentAt'>,
-    tx?: DrizzleTx,
-  ): Promise<TAdminRegistrationRateLimit> {
-    const executor = this.drizzleService.getExecutor(tx);
-    const [row] = await executor
+  async recordOtpSent(tx: DrizzleTx, sentAt: Date): Promise<void> {
+    await tx
       .insert(adminRegistrationRateLimitTable)
       .values({
         id: ADMIN_REGISTRATION_RATE_LIMIT_GLOBAL_ID,
-        lastOtpSentAt: data.lastOtpSentAt,
+        lastOtpSentAt: sentAt,
       })
       .onConflictDoUpdate({
         target: adminRegistrationRateLimitTable.id,
-        set: {
-          lastOtpSentAt: data.lastOtpSentAt,
-        },
-      })
-      .returning();
-
-    return row;
+        set: { lastOtpSentAt: sentAt },
+      });
   }
 }

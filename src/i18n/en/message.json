@@ -4,5 +4,21 @@
   },
   "common": {
     "internalError": "Something went wrong"
+  },
+  "error": {
+    "usernameExists": "Username already exists",
+    "emailExists": "Email already exists",
+    "invalidOtp": "Invalid or expired OTP",
+    "invalidCredentials": "Invalid email or password",
+    "adminRegistrationRateLimited": "Admin registration OTP can only be requested once per minute. Please try again shortly",
+    "adminLoginRateLimited": "Too many login attempts. Please try again later"
+  },
+  "success": {
+    "adminRegistrationOtpSent": "Admin registration OTP sent to the gatekeeper email",
+    "adminRegistered": "Admin registered successfully",
+    "adminLoggedIn": "Admin logged in successfully",
+    "adminAuthenticated": "Admin authenticated",
+    "adminTokenRefreshed": "Admin access token refreshed",
+    "adminLoggedOut": "Admin logged out successfully"
   }
 }

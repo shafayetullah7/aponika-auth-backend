@@ -6,7 +6,16 @@ import {
   TNewPlatformAdminLocalAuth,
   TPlatformAdminLocalAuth,
 } from '@/_db/drizzle/schema/platform-admin/platform-admin-local-auth.schema';
+import {
+  platformAdminsTable,
+  TPlatformAdmin,
+} from '@/_db/drizzle/schema/platform-admin/platform-admin.schema';
 import { DrizzleTx } from '@/_db/drizzle/types';
+
+export type PlatformAdminWithLocalAuth = {
+  admin: TPlatformAdmin;
+  localAuth: TPlatformAdminLocalAuth;
+};
 
 @Injectable()
 export class PlatformAdminLocalAuthRepository {
@@ -34,6 +43,27 @@ export class PlatformAdminLocalAuthRepository {
       .select()
       .from(platformAdminLocalAuthTable)
       .where(eq(platformAdminLocalAuthTable.adminId, adminId))
+      .limit(1);
+
+    return row ?? null;
+  }
+
+  async findByEmail(
+    email: string,
+    tx?: DrizzleTx,
+  ): Promise<PlatformAdminWithLocalAuth | null> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const [row] = await executor
+      .select({
+        admin: platformAdminsTable,
+        localAuth: platformAdminLocalAuthTable,
+      })
+      .from(platformAdminsTable)
+      .innerJoin(
+        platformAdminLocalAuthTable,
+        eq(platformAdminLocalAuthTable.adminId, platformAdminsTable.id),
+      )
+      .where(eq(platformAdminsTable.email, email))
       .limit(1);
 
     return row ?? null;

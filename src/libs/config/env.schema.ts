@@ -46,6 +46,12 @@ export const envSchema = z.object({
   JWT_USER_ACCESS_EXP: durationString.default('15m'),
   JWT_USER_REFRESH_SECRET: jwtSecret,
   JWT_USER_REFRESH_EXP: durationString.default('7d'),
+
+  /** Gatekeeper inbox for admin registration OTP (F5). */
+  ADMIN_REGISTRATION_OTP_EMAIL: z.string().email(),
+
+  /** Mail delivery: console logs OTP in dev; smtp reserved for later. */
+  MAIL_PROVIDER: z.enum(['console', 'smtp']).default('console'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

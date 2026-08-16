@@ -7,7 +7,19 @@ Operator identity: platform admins, local credentials, registration OTP state.
 
 Not the Byte Forge marketplace admin (`byte-forge-admin`).
 
-## Tables
+## HTTP (F5–F6)
+
+| Method | Path |
+|--------|------|
+| `POST` | `/api/v1/admin/auth/register/request-otp` |
+| `POST` | `/api/v1/admin/auth/register` |
+| `POST` | `/api/v1/admin/auth/login` |
+| `GET` | `/api/v1/admin/auth/check` |
+| `POST` | `/api/v1/admin/auth/refresh` |
+| `POST` | `/api/v1/admin/auth/logout` |
+| `GET` | `/api/v1/admin/clients` (stub — guard test) |
+
+OAuth client CRUD in F7.
 
 | Table | Purpose |
 |-------|---------|

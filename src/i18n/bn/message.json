@@ -4,5 +4,21 @@
   },
   "common": {
     "internalError": "কিছু একটা ভুল হয়েছে"
+  },
+  "error": {
+    "usernameExists": "ইউজারনেম ইতিমধ্যে ব্যবহৃত হয়েছে",
+    "emailExists": "ইমেইল ইতিমধ্যে ব্যবহৃত হয়েছে",
+    "invalidOtp": "ভুল বা মেয়াদোত্তীর্ণ OTP",
+    "invalidCredentials": "ভুল ইমেইল বা পাসওয়ার্ড",
+    "adminRegistrationRateLimited": "অ্যাডমিন রেজিস্ট্রেশন OTP প্রতি মিনিটে একবারই অনুরোধ করা যায়। কিছুক্ষণ পর আবার চেষ্টা করুন",
+    "adminLoginRateLimited": "অতিরিক্ত লগইন প্রচেষ্টা। পরে আবার চেষ্টা করুন"
+  },
+  "success": {
+    "adminRegistrationOtpSent": "অ্যাডমিন রেজিস্ট্রেশন OTP গেটকিপার ইমেইলে পাঠানো হয়েছে",
+    "adminRegistered": "অ্যাডমিন সফলভাবে নিবন্ধিত হয়েছে",
+    "adminLoggedIn": "অ্যাডমিন সফলভাবে লগ ইন হয়েছে",
+    "adminAuthenticated": "অ্যাডমিন প্রমাণিত",
+    "adminTokenRefreshed": "অ্যাডমিন অ্যাক্সেস টোকেন রিফ্রেশ হয়েছে",
+    "adminLoggedOut": "অ্যাডমিন সফলভাবে লগ আউট হয়েছে"
   }
 }

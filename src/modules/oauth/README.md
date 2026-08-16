@@ -64,7 +64,7 @@ Maps to [INTEGRATION.md](../../../docs/INTEGRATION.md) registration fields:
 - Zod: `CreateOAuthClientDto`, `UpdateOAuthClientDto` (`dto/`)
 - URI rules: HTTPS required except `http://localhost` / `http://127.0.0.1`; no wildcards; `allowed_origins` must cover redirect origins
 - Public clients: `pkce_required = true`, no `client_secret`
-- Confidential clients: generated secret returned once on create; bcrypt hash at rest (`libs/crypto/password.ts`)
+- Confidential clients: generated secret returned once on create; Argon2id hash at rest (`libs/crypto/password.ts`)
 - `OAuthClientService` — `create`, `update`, `disable`, `findByClientId`
 
 Exported via `OAuthModule`. Admin HTTP API is **F7**.

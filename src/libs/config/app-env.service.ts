@@ -106,6 +106,16 @@ export class AppEnvService {
     return this.configService.get('JWT_USER_REFRESH_EXP', { infer: true });
   }
 
+  get ADMIN_REGISTRATION_OTP_EMAIL() {
+    return this.configService.get('ADMIN_REGISTRATION_OTP_EMAIL', {
+      infer: true,
+    });
+  }
+
+  get MAIL_PROVIDER() {
+    return this.configService.get('MAIL_PROVIDER', { infer: true });
+  }
+
   get isProduction() {
     return this.NODE_ENV === 'production';
   }
