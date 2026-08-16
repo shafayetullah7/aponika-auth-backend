@@ -17,6 +17,7 @@ import { PlatformModule } from './modules/platform/platform.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { OAuthModule } from './modules/oauth/oauth.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { UserAuthModule } from './modules/user-auth/user-auth.module';
 import { PlatformAdminModule } from './modules/platform-admin/platform-admin.module';
 import { SessionModule } from './modules/session/session.module';
 import { ResponseModule } from './libs/response/response.module';
@@ -41,6 +42,7 @@ import { PlatformAdminAuthGuardModule } from './libs/guards/platform-admin-auth.
     AuditModule,
     OAuthModule,
     IdentityModule,
+    UserAuthModule,
     PlatformAdminModule,
     SessionModule,
     I18nModule.forRoot({

@@ -10,6 +10,7 @@
     "emailExists": "Email already exists",
     "invalidOtp": "Invalid or expired OTP",
     "invalidCredentials": "Invalid email or password",
+    "invalidEmailVerificationToken": "Invalid or expired email verification link",
     "adminRegistrationRateLimited": "Admin registration OTP can only be requested once per minute. Please try again shortly",
     "adminLoginRateLimited": "Too many login attempts. Please try again later"
   },
@@ -25,6 +26,8 @@
     "oauthClientCreated": "OAuth client created",
     "oauthClientUpdated": "OAuth client updated",
     "oauthClientDisabled": "OAuth client disabled",
-    "oauthClientEnabled": "OAuth client enabled"
+    "oauthClientEnabled": "OAuth client enabled",
+    "userRegistered": "Account created. Check your email to verify your address",
+    "userEmailVerified": "Email verified successfully"
   }
 }

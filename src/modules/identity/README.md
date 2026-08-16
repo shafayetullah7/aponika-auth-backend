@@ -4,6 +4,8 @@ End-user accounts: registration, credentials, profile, MFA, email/phone verifica
 
 **Schema domain:** `src/_db/drizzle/schema/identity/`
 
+Tables: `users`, `user_credentials`, `user_profiles`, `user_email_verifications` (F15).
+
 | Table | Purpose |
 |-------|---------|
 | `users` | Core account (`email`, `status`) — OIDC `sub` = `users.id` |

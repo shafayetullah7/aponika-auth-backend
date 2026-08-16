@@ -58,6 +58,28 @@ export class IdentityRepository {
     return row ?? null;
   }
 
+  async findCredentialByUserId(
+    userId: string,
+    tx?: DrizzleTx,
+  ): Promise<TUserCredential | null> {
+    const executor = this.drizzleService.getExecutor(tx);
+    const [row] = await executor
+      .select()
+      .from(userCredentialsTable)
+      .where(eq(userCredentialsTable.userId, userId))
+      .limit(1);
+
+    return row ?? null;
+  }
+
+  async markEmailVerified(userId: string, tx?: DrizzleTx): Promise<void> {
+    const executor = this.drizzleService.getExecutor(tx);
+    await executor
+      .update(userCredentialsTable)
+      .set({ emailVerified: true })
+      .where(eq(userCredentialsTable.userId, userId));
+  }
+
   async createUserWithCredential(
     input: CreateUserWithCredentialInput,
     tx?: DrizzleTx,

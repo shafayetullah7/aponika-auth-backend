@@ -10,6 +10,7 @@
     "emailExists": "ইমেইল ইতিমধ্যে ব্যবহৃত হয়েছে",
     "invalidOtp": "ভুল বা মেয়াদোত্তীর্ণ OTP",
     "invalidCredentials": "ভুল ইমেইল বা পাসওয়ার্ড",
+    "invalidEmailVerificationToken": "ভুল বা মেয়াদোত্তীর্ণ ইমেইল যাচাইকরণ লিংক",
     "adminRegistrationRateLimited": "অ্যাডমিন রেজিস্ট্রেশন OTP প্রতি মিনিটে একবারই অনুরোধ করা যায়। কিছুক্ষণ পর আবার চেষ্টা করুন",
     "adminLoginRateLimited": "অতিরিক্ত লগইন প্রচেষ্টা। পরে আবার চেষ্টা করুন"
   },
@@ -25,6 +26,8 @@
     "oauthClientCreated": "OAuth ক্লায়েন্ট তৈরি হয়েছে",
     "oauthClientUpdated": "OAuth ক্লায়েন্ট আপডেট হয়েছে",
     "oauthClientDisabled": "OAuth ক্লায়েন্ট নিষ্ক্রিয় করা হয়েছে",
-    "oauthClientEnabled": "OAuth ক্লায়েন্ট সক্রিয় করা হয়েছে"
+    "oauthClientEnabled": "OAuth ক্লায়েন্ট সক্রিয় করা হয়েছে",
+    "userRegistered": "অ্যাকাউন্ট তৈরি হয়েছে। ইমেইল যাচাই করতে আপনার ইমেইল দেখুন",
+    "userEmailVerified": "ইমেইল সফলভাবে যাচাই হয়েছে"
   }
 }
