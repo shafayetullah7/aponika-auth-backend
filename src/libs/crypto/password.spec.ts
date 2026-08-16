@@ -1,4 +1,4 @@
-import { hashPassword, verifyPassword } from './password';
+import { hashPassword, verifyPassword, generateClientSecret } from './password';
 
 describe('password (argon2)', () => {
   it('hashes and verifies a password', async () => {
@@ -10,5 +10,11 @@ describe('password (argon2)', () => {
 
   it('returns false for invalid hash strings', async () => {
     expect(await verifyPassword('Secret123!', 'not-a-hash')).toBe(false);
+  });
+
+  it('generates URL-safe client secrets', () => {
+    const secret = generateClientSecret();
+    expect(secret.length).toBeGreaterThanOrEqual(32);
+    expect(secret).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 });

@@ -52,6 +52,9 @@ export const envSchema = z.object({
 
   /** Mail delivery: console logs OTP in dev; smtp reserved for later. */
   MAIL_PROVIDER: z.enum(['console', 'smtp']).default('console'),
+
+  /** Auth frontend base URL for verification links (no trailing slash). */
+  AUTH_FRONTEND_URL: z.string().url().default('http://localhost:3011'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

@@ -1,5 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import { passwordSchema } from '@/libs/validation/password.schema';
 
 export const createLocalAdminSchema = z.object({
   firstName: z
@@ -27,20 +28,7 @@ export const createLocalAdminSchema = z.object({
     .email({ message: 'Invalid email format' })
     .max(255, { message: 'Email cannot exceed 255 characters' }),
 
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters' })
-    .max(255, { message: 'Password cannot exceed 255 characters' })
-    .regex(/[A-Z]/, {
-      message: 'Password must contain at least one uppercase letter',
-    })
-    .regex(/[a-z]/, {
-      message: 'Password must contain at least one lowercase letter',
-    })
-    .regex(/[0-9]/, { message: 'Password must contain at least one number' })
-    .regex(/[^A-Za-z0-9]/, {
-      message: 'Password must contain at least one special character',
-    }),
+  password: passwordSchema,
 });
 
 export class CreateLocalAdminDto extends createZodDto(createLocalAdminSchema) {}

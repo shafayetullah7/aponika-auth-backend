@@ -79,6 +79,9 @@ Idempotent — existing `client_id`s are skipped. See [INTEGRATION.md](../docs/I
 | `COOKIE_DOMAIN` | `localhost` | Session cookie domain |
 | `SESSION_MAX_AGE` | `604800000` | Session cookie max-age (ms) |
 | `JWT_*_SECRET` | 32+ chars | Admin/user BFF session JWT signing — see `.env.example` |
+| `ADMIN_REGISTRATION_OTP_EMAIL` | Gatekeeper inbox for admin OTP (F5) |
+| `MAIL_PROVIDER` | `console` (dev) or `smtp` (future) |
+| `AUTH_FRONTEND_URL` | Base URL for email verification links (F15) |
 | `DB_HOST` / `DB_PORT` | `db` / `5432` | Docker Compose service networking |
 | `DB_EXTERNAL_PORT` | `5436` | Host port to reach Postgres (`localhost:5436`) |
 | `APP_EXTERNAL_PORT` | `3010` | Host port mapped to the API container |

@@ -116,6 +116,10 @@ export class AppEnvService {
     return this.configService.get('MAIL_PROVIDER', { infer: true });
   }
 
+  get AUTH_FRONTEND_URL() {
+    return this.configService.get('AUTH_FRONTEND_URL', { infer: true });
+  }
+
   get isProduction() {
     return this.NODE_ENV === 'production';
   }
