@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppEnvService } from '@/libs/config/app-env.service';
 import { ConsoleMailProvider } from './console-mail.provider';
+import { SmtpMailProvider } from './smtp-mail.provider';
 import {
   AdminRegistrationOtpMailInput,
   EmailVerificationMailInput,
@@ -12,6 +13,7 @@ export class MailService {
   constructor(
     private readonly appEnv: AppEnvService,
     private readonly consoleMailProvider: ConsoleMailProvider,
+    private readonly smtpMailProvider: SmtpMailProvider,
   ) {}
 
   async sendAdminRegistrationOtp(
@@ -19,11 +21,20 @@ export class MailService {
   ): Promise<void> {
     await this.getProvider().send({
       to: input.to,
-      subject: 'Admin registration OTP',
+      subject: 'Admin registration OTP — Aponika Auth',
       text: [
-        `OTP=${input.otp}`,
-        `registrant=${input.registrantName} <${input.registrantEmail}> (@${input.registrantUserName})`,
-      ].join(' | '),
+        'A new platform admin registration was requested.',
+        '',
+        `OTP: ${input.otp}`,
+        '',
+        'Registrant details:',
+        `  Name: ${input.registrantName}`,
+        `  Email: ${input.registrantEmail}`,
+        `  Username: @${input.registrantUserName}`,
+        '',
+        'Enter this OTP in the admin registration form to approve the account.',
+        'Do not share this code.',
+      ].join('\n'),
     });
   }
 
@@ -49,10 +60,14 @@ export class MailService {
   }
 
   private getProvider(): MailProvider {
-    if (this.appEnv.MAIL_PROVIDER === 'console') {
-      return this.consoleMailProvider;
+    switch (this.appEnv.MAIL_PROVIDER) {
+      case 'console':
+        return this.consoleMailProvider;
+      case 'gmail':
+      case 'smtp':
+        return this.smtpMailProvider;
+      default:
+        throw new Error(`Unsupported MAIL_PROVIDER: ${this.appEnv.MAIL_PROVIDER}`);
     }
-
-    throw new Error(`Unsupported MAIL_PROVIDER: ${this.appEnv.MAIL_PROVIDER}`);
   }
 }

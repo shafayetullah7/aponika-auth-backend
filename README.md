@@ -80,7 +80,10 @@ Idempotent — existing `client_id`s are skipped. See [INTEGRATION.md](../docs/I
 | `SESSION_MAX_AGE` | `604800000` | Session cookie max-age (ms) |
 | `JWT_*_SECRET` | 32+ chars | Admin/user BFF session JWT signing — see `.env.example` |
 | `ADMIN_REGISTRATION_OTP_EMAIL` | Gatekeeper inbox for admin OTP (F5) |
-| `MAIL_PROVIDER` | `console` (dev) or `smtp` (future) |
+| `MAIL_PROVIDER` | `console`, `gmail`, or `smtp` (gmail/smtp → nodemailer) |
+| `MAIL_HOST` / `MAIL_PORT` / `MAIL_SECURE` | SMTP server (e.g. Gmail `smtp.gmail.com:587`) |
+| `MAIL_USER` / `MAIL_PASSWORD` | SMTP credentials (required when `MAIL_PROVIDER` is `gmail` or `smtp`) |
+| `MAIL_FROM_NAME` / `MAIL_FROM_EMAIL` | From header for outbound mail |
 | `AUTH_FRONTEND_URL` | Base URL for email verification links (F15) |
 | `DB_HOST` / `DB_PORT` | `db` / `5432` | Docker Compose service networking |
 | `DB_EXTERNAL_PORT` | `5436` | Host port to reach Postgres (`localhost:5436`) |

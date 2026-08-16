@@ -61,11 +61,42 @@ export const envSchema = z.object({
   /** Gatekeeper inbox for admin registration OTP (F5). */
   ADMIN_REGISTRATION_OTP_EMAIL: z.string().email(),
 
-  /** Mail delivery: console logs OTP in dev; smtp reserved for later. */
-  MAIL_PROVIDER: z.enum(['console', 'smtp']).default('console'),
+  /** Mail delivery — `gmail` and `smtp` use nodemailer; `console` logs to server. */
+  MAIL_PROVIDER: z.enum(['gmail', 'smtp', 'console']).default('console'),
+
+  MAIL_HOST: z.string().default('smtp.gmail.com'),
+  MAIL_PORT: z.coerce.number().int().positive().default(587),
+  MAIL_SECURE: z.string().default('false'),
+  MAIL_USER: z.string().optional().default(''),
+  MAIL_PASSWORD: z.string().optional().default(''),
+  MAIL_FROM_NAME: z.string().default('Aponika'),
+  MAIL_FROM_EMAIL: z.string().email().default('noreply@aponika.com'),
 
   /** Auth frontend base URL for verification links (no trailing slash). */
   AUTH_FRONTEND_URL: z.string().url().default('http://localhost:3011'),
+}).superRefine((data, ctx) => {
+  const requiresSmtp =
+    data.MAIL_PROVIDER === 'smtp' || data.MAIL_PROVIDER === 'gmail';
+
+  if (!requiresSmtp) {
+    return;
+  }
+
+  if (!data.MAIL_USER?.trim()) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'MAIL_USER is required when MAIL_PROVIDER is gmail or smtp',
+      path: ['MAIL_USER'],
+    });
+  }
+
+  if (!data.MAIL_PASSWORD?.trim()) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'MAIL_PASSWORD is required when MAIL_PROVIDER is gmail or smtp',
+      path: ['MAIL_PASSWORD'],
+    });
+  }
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

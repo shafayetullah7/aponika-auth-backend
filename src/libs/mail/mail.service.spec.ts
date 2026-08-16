@@ -2,11 +2,13 @@ import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppEnvService } from '@/libs/config/app-env.service';
 import { ConsoleMailProvider } from './console-mail.provider';
+import { SmtpMailProvider } from './smtp-mail.provider';
 import { MailService } from './mail.service';
 
 describe('MailService', () => {
   let service: MailService;
   let logSpy: jest.SpyInstance;
+  let smtpSend: jest.SpyInstance;
 
   const appEnv = {
     MAIL_PROVIDER: 'console',
@@ -15,11 +17,15 @@ describe('MailService', () => {
 
   beforeEach(async () => {
     logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    smtpSend = jest
+      .spyOn(SmtpMailProvider.prototype, 'send')
+      .mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MailService,
         ConsoleMailProvider,
+        SmtpMailProvider,
         {
           provide: AppEnvService,
           useValue: appEnv,
@@ -32,6 +38,7 @@ describe('MailService', () => {
 
   afterEach(() => {
     logSpy.mockRestore();
+    smtpSend.mockRestore();
   });
 
   it('buildEmailVerificationUrl encodes the token', () => {
@@ -67,9 +74,46 @@ describe('MailService', () => {
       registrantName: 'Jane Doe',
     });
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('OTP=123456'));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('OTP: 123456'));
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining('gatekeeper@example.com'),
     );
+    expect(smtpSend).not.toHaveBeenCalled();
+  });
+
+  it('uses smtp provider when MAIL_PROVIDER is smtp', async () => {
+    (appEnv as { MAIL_PROVIDER: string }).MAIL_PROVIDER = 'smtp';
+
+    await service.sendAdminRegistrationOtp({
+      to: 'gatekeeper@example.com',
+      otp: '654321',
+      registrantEmail: 'admin@example.com',
+      registrantUserName: 'jane_admin',
+      registrantName: 'Jane Doe',
+    });
+
+    expect(smtpSend).toHaveBeenCalledWith({
+      to: 'gatekeeper@example.com',
+      subject: 'Admin registration OTP — Aponika Auth',
+      text: expect.stringContaining('OTP: 654321'),
+    });
+  });
+
+  it('uses smtp provider when MAIL_PROVIDER is gmail', async () => {
+    (appEnv as { MAIL_PROVIDER: string }).MAIL_PROVIDER = 'gmail';
+
+    await service.sendAdminRegistrationOtp({
+      to: 'gatekeeper@example.com',
+      otp: '111222',
+      registrantEmail: 'admin@example.com',
+      registrantUserName: 'jane_admin',
+      registrantName: 'Jane Doe',
+    });
+
+    expect(smtpSend).toHaveBeenCalledWith({
+      to: 'gatekeeper@example.com',
+      subject: 'Admin registration OTP — Aponika Auth',
+      text: expect.stringContaining('OTP: 111222'),
+    });
   });
 });
