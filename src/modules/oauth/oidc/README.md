@@ -1,4 +1,4 @@
-# OIDC provider module (F21 bootstrap)
+# OIDC provider module (F21 bootstrap, F22 discovery/JWKS)
 
 NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-provider) per [ADR-001](../../../docs/adr/ADR-001-oidc-provider-strategy.md).
 
@@ -6,7 +6,9 @@ NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-prov
 
 | File | Role |
 |------|------|
-| `oidc-boot.config.ts` | Fail-fast issuer / JWKS validation at boot |
+| `oidc-boot.config.ts` | Fail-fast issuer / JWKS path validation at boot |
+| `oidc-jwks.service.ts` | Load RS256 PEM → signing JWKS; public key strip |
+| `oidc-routes.constants.ts` | Protocol paths, global prefix exclusions, path helpers |
 | `oidc-client.mapper.ts` | `oauth_clients` row → oidc-provider Client payload |
 | `oidc-client.registry.ts` | Read-through cache (60s TTL) |
 | `oidc-client.adapter.ts` | `Client` storage adapter `find()` |
@@ -18,8 +20,12 @@ NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-prov
 
 OIDC routes are mounted at the **issuer root** (not under `/api`), e.g.:
 
-- `/.well-known/openid-configuration` (F22)
-- `/auth`, `/token`, …
+| Endpoint | Path |
+|----------|------|
+| OpenID Configuration | `/.well-known/openid-configuration` |
+| JWKS | `/jwks` |
+| Authorization | `/auth` |
+| Token | `/token` |
 
 Authorize/interaction UX ships in F23+.
 
@@ -38,3 +44,11 @@ Confidential client secrets are stored hashed in DB; token auth for confidential
 |-----|-----|------------|
 | `OIDC_ISSUER` | Required, no trailing slash | Required |
 | `OIDC_JWKS_PRIVATE_KEY_PATH` | Optional (library dev keystore) | **Required** |
+
+Generate a dev signing key:
+
+```bash
+bash scripts/generate-oidc-signing-key.sh
+```
+
+See [INTEGRATION.md](../../../docs/INTEGRATION.md) §8 for rotation runbook.

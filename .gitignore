@@ -57,6 +57,9 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+keys/
+*.pem
+
 # Drizzle migrations (user-owned — run db:generate locally)
 src/_db/drizzle/migrations/
 

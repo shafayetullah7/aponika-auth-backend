@@ -7,25 +7,7 @@ import {
 import type { Application } from 'express';
 import { OidcBootConfigService } from './oidc-boot.config';
 import { OidcProviderFactory, OidcProviderInstance } from './oidc-provider.factory';
-
-const OIDC_HTTP_PREFIXES = [
-  '/.well-known',
-  '/auth',
-  '/token',
-  '/reg',
-  '/me',
-  '/jwks',
-  '/device',
-  '/revocation',
-  '/introspection',
-  '/session',
-] as const;
-
-export function isOidcHttpPath(path: string): boolean {
-  return OIDC_HTTP_PREFIXES.some(
-    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
-  );
-}
+import { isOidcHttpPath } from './oidc-routes.constants';
 
 @Injectable()
 export class OidcService implements OnModuleInit {
@@ -41,7 +23,7 @@ export class OidcService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.bootConfig.validate();
+    await this.bootConfig.validate();
     this.provider = await this.providerFactory.create();
     this.callback = this.provider.callback();
     this.logger.log(`OIDC provider initialized for ${this.provider.issuer}`);
@@ -71,6 +53,6 @@ export class OidcService implements OnModuleInit {
       handler(req, res, next);
     });
 
-    this.logger.log('OIDC HTTP routes mounted (dev bootstrap — authorize flow ships in F23)');
+    this.logger.log('OIDC discovery and protocol routes mounted at issuer root');
   }
 }

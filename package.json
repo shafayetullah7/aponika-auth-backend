@@ -103,6 +103,7 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "transformIgnorePatterns": [],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

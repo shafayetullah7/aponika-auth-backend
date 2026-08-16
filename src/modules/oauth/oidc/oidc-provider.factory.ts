@@ -1,8 +1,9 @@
-import { readFile } from 'node:fs/promises';
-import { AppEnvService } from '@/libs/config/app-env.service';
 import { Injectable } from '@nestjs/common';
+import { AppEnvService } from '@/libs/config/app-env.service';
 import { OidcClientRegistry } from './oidc-client.registry';
 import { createOidcAdapterFactory } from './oidc-adapter.factory';
+import { OidcJwksService } from './oidc-jwks.service';
+import { OIDC_PROVIDER_ROUTES } from './oidc-routes.constants';
 
 export type OidcProviderInstance = {
   issuer: string;
@@ -19,6 +20,7 @@ export class OidcProviderFactory {
   constructor(
     private readonly appEnv: AppEnvService,
     private readonly clientRegistry: OidcClientRegistry,
+    private readonly jwksService: OidcJwksService,
   ) {}
 
   async create(): Promise<OidcProviderInstance> {
@@ -27,7 +29,7 @@ export class OidcProviderFactory {
     };
 
     const adapter = await createOidcAdapterFactory(this.clientRegistry);
-    const jwks = await this.resolveJwks();
+    const jwks = await this.jwksService.loadSigningJwks();
 
     return new Provider(this.appEnv.OIDC_ISSUER, {
       adapter,
@@ -43,6 +45,7 @@ export class OidcProviderFactory {
       pkce: {
         required: () => true,
       },
+      routes: OIDC_PROVIDER_ROUTES,
       ttl: {
         AccessToken: this.appEnv.OIDC_ACCESS_TOKEN_TTL,
         IdToken: this.appEnv.OIDC_ACCESS_TOKEN_TTL,
@@ -50,28 +53,5 @@ export class OidcProviderFactory {
       jwks,
       findAccount: async () => undefined,
     });
-  }
-
-  private async resolveJwks(): Promise<{ keys: unknown[] } | undefined> {
-    const keyPath = this.appEnv.OIDC_JWKS_PRIVATE_KEY_PATH?.trim();
-    if (!keyPath) {
-      return undefined;
-    }
-
-    const pem = await readFile(keyPath, 'utf8');
-    const { importPKCS8, exportJWK } = await import('jose');
-    const privateKey = await importPKCS8(pem, 'RS256');
-    const jwk = await exportJWK(privateKey);
-
-    return {
-      keys: [
-        {
-          ...jwk,
-          use: 'sig',
-          alg: 'RS256',
-          kid: 'aponika-oidc-1',
-        },
-      ],
-    };
   }
 }

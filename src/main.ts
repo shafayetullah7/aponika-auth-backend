@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { AppEnvService } from './libs/config/app-env.service';
 import { getAllowedOrigins } from './libs/security/allowed-origins';
 import { OidcService } from './modules/oauth/oidc/oidc.service';
+import { OIDC_GLOBAL_PREFIX_EXCLUSIONS } from './modules/oauth/oidc/oidc-routes.constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -18,7 +19,9 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  app.setGlobalPrefix('api', { exclude: ['health'] });
+  app.setGlobalPrefix('api', {
+    exclude: [...OIDC_GLOBAL_PREFIX_EXCLUSIONS],
+  });
   app.use(cookieParser());
 
   const appEnv = app.get(AppEnvService);

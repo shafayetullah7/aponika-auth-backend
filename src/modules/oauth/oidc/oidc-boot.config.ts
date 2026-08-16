@@ -1,37 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { AppEnvService } from '@/libs/config/app-env.service';
+import { OidcJwksService } from './oidc-jwks.service';
+import {
+  assertValidOidcIssuer,
+  OidcBootConfigError,
+} from './oidc-issuer.validation';
 
-export class OidcBootConfigError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'OidcBootConfigError';
-  }
-}
-
-export function assertValidOidcIssuer(issuer: string): void {
-  if (issuer.endsWith('/')) {
-    throw new OidcBootConfigError(
-      'OIDC_ISSUER must not end with a trailing slash',
-    );
-  }
-
-  let parsed: URL;
-  try {
-    parsed = new URL(issuer);
-  } catch {
-    throw new OidcBootConfigError('OIDC_ISSUER must be a valid URL');
-  }
-
-  if (!parsed.protocol.startsWith('http')) {
-    throw new OidcBootConfigError('OIDC_ISSUER must use http or https');
-  }
-}
+export { OidcBootConfigError, assertValidOidcIssuer } from './oidc-issuer.validation';
 
 @Injectable()
 export class OidcBootConfigService {
-  constructor(private readonly appEnv: AppEnvService) {}
+  constructor(
+    private readonly appEnv: AppEnvService,
+    private readonly jwksService: OidcJwksService,
+  ) {}
 
-  validate(): void {
+  async validate(): Promise<void> {
     assertValidOidcIssuer(this.appEnv.OIDC_ISSUER);
 
     if (
@@ -42,5 +26,7 @@ export class OidcBootConfigService {
         'OIDC_JWKS_PRIVATE_KEY_PATH is required in production',
       );
     }
+
+    await this.jwksService.assertPrivateKeyAvailable();
   }
 }

@@ -18,10 +18,10 @@ type CacheEntry = {
 @Injectable()
 export class OidcClientRegistry {
   private readonly cache = new Map<string, CacheEntry>();
+  private readonly cacheTtlMs = DEFAULT_CACHE_TTL_MS;
 
   constructor(
     private readonly oauthClientRepository: OAuthClientRepository,
-    private readonly cacheTtlMs = DEFAULT_CACHE_TTL_MS,
   ) {}
 
   async findPayload(clientId: string): Promise<OidcClientPayload | undefined> {
