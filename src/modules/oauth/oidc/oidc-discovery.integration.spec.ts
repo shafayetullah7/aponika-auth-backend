@@ -3,13 +3,18 @@ import request from 'supertest';
 import type { IdentityRepository } from '@/modules/identity/identity.repository';
 import { OidcAccountService } from './oidc-account.service';
 import { OidcClientRegistry } from './oidc-client.registry';
+import { OidcConsentGrantService } from './oidc-consent-grant.service';
 import { OidcInteractionService } from './oidc-interaction.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcProviderFactory } from './oidc-provider.factory';
 import { OidcResourceConfigService } from './oidc-resource.config';
 import { OidcTokenClaimsService } from './oidc-token-claims.service';
 import { OIDC_ROUTE_PATHS } from './oidc-routes.constants';
-import { createTestAppEnv } from './oidc-authorize.test-utils';
+import {
+  createDefaultConsentRepositoryMock,
+  createDefaultOAuthClientRepositoryMock,
+  createTestAppEnv,
+} from './oidc-authorize.test-utils';
 
 const ISSUER = 'http://localhost:3010';
 
@@ -28,11 +33,21 @@ describe('OIDC discovery integration', () => {
       findCredentialByUserId: jest.fn(),
     } as unknown as IdentityRepository;
     const accountService = new OidcAccountService(identityRepository);
-    const interactionService = new OidcInteractionService(appEnv, {
-      resolveAuthenticatedUser: jest.fn(),
-    } as never);
     const resourceConfig = new OidcResourceConfigService(appEnv);
     const tokenClaims = new OidcTokenClaimsService(accountService);
+    const interactionService = new OidcInteractionService(
+      appEnv,
+      {
+        resolveAuthenticatedUser: jest.fn(),
+      } as never,
+      createDefaultOAuthClientRepositoryMock() as never,
+      createDefaultConsentRepositoryMock() as never,
+    );
+    const consentGrantService = new OidcConsentGrantService(
+      createDefaultConsentRepositoryMock() as never,
+      createDefaultOAuthClientRepositoryMock() as never,
+      appEnv,
+    );
     const factory = new OidcProviderFactory(
       appEnv,
       registry,
@@ -41,6 +56,7 @@ describe('OIDC discovery integration', () => {
       interactionService,
       resourceConfig,
       tokenClaims,
+      consentGrantService,
     );
     const provider = await factory.create();
 
@@ -65,6 +81,7 @@ describe('OIDC discovery integration', () => {
     expect(res.body.authorization_endpoint).toMatch(/\/auth$/);
     expect(res.body.token_endpoint).toMatch(/\/token$/);
     expect(res.body.code_challenge_methods_supported).toContain('S256');
+    expect(res.body.grant_types_supported).toContain('refresh_token');
   });
 
   it('GET /jwks returns public signing keys only', async () => {

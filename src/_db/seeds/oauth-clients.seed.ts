@@ -44,6 +44,7 @@ export async function seedOAuthClients(): Promise<void> {
           responseTypes: DEV_OAUTH_CLIENT_DEFAULTS.responseTypes,
           scopes: DEV_OAUTH_CLIENT_DEFAULTS.scopes,
           pkceRequired: DEV_OAUTH_CLIENT_DEFAULTS.pkceRequired,
+          trustedFirstParty: definition.trustedFirstParty ?? false,
           status: DEV_OAUTH_CLIENT_DEFAULTS.status,
           clientSecretHash: null,
           createdBy: null,

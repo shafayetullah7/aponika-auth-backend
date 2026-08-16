@@ -23,6 +23,7 @@ export const oauthClientsTable = pgTable(
     responseTypes: text('response_types').array().notNull(),
     scopes: text('scopes').array().notNull(),
     pkceRequired: boolean('pkce_required').notNull().default(true),
+    trustedFirstParty: boolean('trusted_first_party').notNull().default(false),
     status: oauthClientStatusEnum('status').notNull().default('active'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', {

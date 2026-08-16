@@ -9,6 +9,7 @@ export type DevOAuthClientSeed = {
   name: string;
   description: string;
   clientType: (typeof OAuthClientTypeEnum)[keyof typeof OAuthClientTypeEnum];
+  trustedFirstParty?: boolean;
   redirectUris: string[];
   postLogoutRedirectUris: string[];
   allowedOrigins: string[];
@@ -27,6 +28,7 @@ export const DEV_OAUTH_CLIENTS: DevOAuthClientSeed[] = [
     name: 'Byte Forge Web',
     description: 'Byte Forge marketplace web app',
     clientType: OAuthClientTypeEnum.PUBLIC,
+    trustedFirstParty: true,
     redirectUris: ['http://localhost:3000/auth/callback'],
     postLogoutRedirectUris: ['http://localhost:3000/'],
     allowedOrigins: ['http://localhost:3000'],
@@ -36,6 +38,7 @@ export const DEV_OAUTH_CLIENTS: DevOAuthClientSeed[] = [
     name: 'Byte Forge Admin',
     description: 'Byte Forge marketplace operator console',
     clientType: OAuthClientTypeEnum.PUBLIC,
+    trustedFirstParty: true,
     redirectUris: ['http://localhost:3050/auth/callback'],
     postLogoutRedirectUris: ['http://localhost:3050/'],
     allowedOrigins: ['http://localhost:3050'],
@@ -45,6 +48,7 @@ export const DEV_OAUTH_CLIENTS: DevOAuthClientSeed[] = [
     name: 'Aponika Auth Admin',
     description: 'Aponika identity platform operator console',
     clientType: OAuthClientTypeEnum.PUBLIC,
+    trustedFirstParty: true,
     redirectUris: ['http://localhost:3012/auth/callback'],
     postLogoutRedirectUris: ['http://localhost:3012/'],
     allowedOrigins: ['http://localhost:3012'],

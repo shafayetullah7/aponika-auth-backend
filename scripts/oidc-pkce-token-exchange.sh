@@ -44,4 +44,15 @@ RESOURCE='${RESOURCE}' \\
 bash -c 'curl -sS "\$ISSUER/jwks" | jq . > /tmp/aponika-jwks.json && \\
   node -e "const {createLocalJWKSet,jwtVerify}=require(\\\"jose\\\"); const fs=require(\\\"fs\\\"); (async()=>{const jwks=JSON.parse(fs.readFileSync(\\\"/tmp/aponika-jwks.json\\\",\\\"utf8\\\")); const key=createLocalJWKSet(jwks); const {payload}=await jwtVerify(process.env.ACCESS_TOKEN,key,{issuer:process.env.ISSUER,audience:process.env.RESOURCE}); console.log(payload);})();"'
 
+4) When the access token expires, refresh (stores a new refresh token each time):
+
+REFRESH_TOKEN='<paste-refresh-token>' \\
+ISSUER='${ISSUER}' \\
+CLIENT_ID='${CLIENT_ID}' \\
+bash -c 'curl -sS -X POST "\$ISSUER/token" \\
+  -H "Content-Type: application/x-www-form-urlencoded" \\
+  --data-urlencode "grant_type=refresh_token" \\
+  --data-urlencode "client_id=\$CLIENT_ID" \\
+  --data-urlencode "refresh_token=\$REFRESH_TOKEN" | jq'
+
 EOF

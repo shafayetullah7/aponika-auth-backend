@@ -70,6 +70,7 @@ export const createOAuthClientSchema = z
     responseTypes: z.array(z.string().min(1)).min(1).optional(),
     scopes: z.array(z.string().min(1)).min(1).optional(),
     pkceRequired: z.boolean().optional(),
+    trustedFirstParty: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     addPublicClientPkceIssue(data, ctx);
@@ -89,6 +90,7 @@ export const updateOAuthClientSchema = z
     responseTypes: z.array(z.string().min(1)).min(1).optional(),
     scopes: z.array(z.string().min(1)).min(1).optional(),
     pkceRequired: z.boolean().optional(),
+    trustedFirstParty: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
     message: 'At least one field is required',

@@ -17,6 +17,7 @@ describe('mapOAuthClientToOidcPayload', () => {
     responseTypes: ['code'],
     scopes: ['openid', 'profile', 'email'],
     pkceRequired: true,
+    trustedFirstParty: false,
     status: OAuthClientStatusEnum.ACTIVE,
     createdBy: null,
     createdAt: new Date(),
@@ -46,7 +47,7 @@ describe('mapOAuthClientToOidcPayload', () => {
 
     expect(payload).toEqual({
       client_id: 'byte-forge-web',
-      grant_types: ['authorization_code'],
+      grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
       redirect_uris: ['http://localhost:3000/auth/callback'],
       post_logout_redirect_uris: ['http://localhost:3000/'],

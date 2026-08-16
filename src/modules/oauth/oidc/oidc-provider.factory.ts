@@ -6,6 +6,7 @@ import { createOidcAdapterFactory } from './oidc-adapter.factory';
 import { OidcInteractionService } from './oidc-interaction.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcResourceConfigService } from './oidc-resource.config';
+import { OidcConsentGrantService } from './oidc-consent-grant.service';
 import { OidcTokenClaimsService } from './oidc-token-claims.service';
 import { OIDC_PROVIDER_ROUTES } from './oidc-routes.constants';
 import type { OidcProviderEventMap } from './oidc-provider.types';
@@ -47,6 +48,7 @@ export class OidcProviderFactory {
     private readonly interactionService: OidcInteractionService,
     private readonly resourceConfig: OidcResourceConfigService,
     private readonly tokenClaims: OidcTokenClaimsService,
+    private readonly consentGrantService: OidcConsentGrantService,
   ) {}
 
   async create(): Promise<OidcProviderInstance> {
@@ -56,10 +58,6 @@ export class OidcProviderFactory {
 
     const adapter = await createOidcAdapterFactory(this.clientRegistry);
     const jwks = await this.jwksService.loadSigningJwks();
-    const refreshTokenTtlSeconds = Math.max(
-      60,
-      Math.floor(this.appEnv.SESSION_MAX_AGE / 1000),
-    );
 
     return new Provider(this.appEnv.OIDC_ISSUER, {
       adapter,
@@ -96,12 +94,14 @@ export class OidcProviderFactory {
         AccessToken: this.appEnv.OIDC_ACCESS_TOKEN_TTL,
         IdToken: this.appEnv.OIDC_ACCESS_TOKEN_TTL,
         AuthorizationCode: OIDC_AUTHORIZATION_CODE_TTL_SECONDS,
-        RefreshToken: refreshTokenTtlSeconds,
+        RefreshToken: this.appEnv.OIDC_REFRESH_TOKEN_TTL,
       },
       jwks,
       findAccount: (ctx, id) => this.accountService.findAccount(ctx, id),
       extraTokenClaims: this.tokenClaims.extraTokenClaims,
+      loadExistingGrant: this.consentGrantService.loadExistingGrant,
       issueRefreshToken: async () => true,
+      rotateRefreshToken: async () => true,
       conformIdTokenClaims: true,
     }) as OidcProviderInstance;
   }

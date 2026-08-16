@@ -62,6 +62,10 @@ export class AppEnvService {
     return this.configService.get('OIDC_ACCESS_TOKEN_TTL', { infer: true });
   }
 
+  get OIDC_REFRESH_TOKEN_TTL() {
+    return this.configService.get('OIDC_REFRESH_TOKEN_TTL', { infer: true });
+  }
+
   get OIDC_DEFAULT_RESOURCE() {
     return this.configService.get('OIDC_DEFAULT_RESOURCE', { infer: true });
   }

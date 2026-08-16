@@ -79,6 +79,7 @@ export class OAuthClientService {
         responseTypes: dto.responseTypes ?? DEFAULT_RESPONSE_TYPES,
         scopes: dto.scopes ?? DEFAULT_SCOPES,
         pkceRequired,
+        trustedFirstParty: dto.trustedFirstParty ?? false,
         clientSecretHash,
         status: OAuthClientStatusEnum.ACTIVE,
         createdBy: createdBy ?? null,
@@ -123,6 +124,9 @@ export class OAuthClientService {
         : {}),
       ...(dto.scopes !== undefined ? { scopes: dto.scopes } : {}),
       ...(dto.pkceRequired !== undefined ? { pkceRequired } : {}),
+      ...(dto.trustedFirstParty !== undefined
+        ? { trustedFirstParty: dto.trustedFirstParty }
+        : {}),
     });
 
     if (!updatedClient) {

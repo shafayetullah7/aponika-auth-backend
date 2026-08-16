@@ -28,6 +28,9 @@ export const envSchema = z.object({
   /** OIDC access token TTL in seconds (default 15 minutes). */
   OIDC_ACCESS_TOKEN_TTL: z.coerce.number().int().positive().default(900),
 
+  /** OIDC refresh token TTL in seconds (default 7 days). */
+  OIDC_REFRESH_TOKEN_TTL: z.coerce.number().int().positive().default(604_800),
+
   /**
    * Default resource indicator / JWT `aud` for access tokens (Byte Forge API in dev).
    */

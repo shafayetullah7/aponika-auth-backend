@@ -1,4 +1,4 @@
-# OIDC provider module (F21–F24)
+# OIDC provider module (F21–F26)
 
 NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-provider) per [ADR-001](../../../docs/adr/ADR-001-oidc-provider-strategy.md).
 
@@ -34,9 +34,13 @@ OIDC routes are mounted at the **issuer root** (not under `/api`), e.g.:
 | Interaction resume | `/interaction/:uid` |
 | Token | `/token` |
 
-Authorization (F23): unauthenticated users are sent to the auth frontend login; after F16 session cookies are present, `/interaction/:uid` completes login + auto-consent (explicit consent in F26).
+Authorization (F23): unauthenticated users are sent to the auth frontend login; after F16 session cookies are present, `/interaction/:uid` completes login.
+
+Consent (F26): third-party clients redirect to `/consent` on the auth frontend; `trusted_first_party` clients auto-consent. Remembered consent skips the prompt via `loadExistingGrant`.
 
 Token (F24): `POST /token` with `authorization_code` + PKCE issues JWT access token (`aud` = `OIDC_DEFAULT_RESOURCE`), `id_token`, and refresh token. See `scripts/oidc-pkce-token-exchange.sh`.
+
+Refresh (F25): `POST /token` with `grant_type=refresh_token` rotates refresh tokens; reuse detection revokes the grant family. TTLs: `OIDC_ACCESS_TOKEN_TTL`, `OIDC_REFRESH_TOKEN_TTL`.
 
 ## Client resolution
 

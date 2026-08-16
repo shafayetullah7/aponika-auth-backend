@@ -24,7 +24,7 @@ export class OidcTokenAuditListener {
 
   private async handleGrantSuccess(ctx: OidcGrantSuccessContext): Promise<void> {
     const grantType = ctx.oidc.params.grant_type;
-    if (grantType !== 'authorization_code') {
+    if (grantType !== 'authorization_code' && grantType !== 'refresh_token') {
       return;
     }
 

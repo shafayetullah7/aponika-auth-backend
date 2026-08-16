@@ -9,8 +9,11 @@ import {
 } from '@/_db/drizzle/enum';
 import type { AppEnvService } from '@/libs/config/app-env.service';
 import type { IdentityRepository } from '@/modules/identity/identity.repository';
+import type { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
+import type { OAuthConsentRepository } from '@/modules/oauth/oauth-consent.repository';
 import { OidcAccountService } from './oidc-account.service';
 import { OidcClientRegistry } from './oidc-client.registry';
+import { OidcConsentGrantService } from './oidc-consent-grant.service';
 import { OidcInteractionService } from './oidc-interaction.service';
 import { OidcJwksService } from './oidc-jwks.service';
 import { OidcProviderFactory } from './oidc-provider.factory';
@@ -21,6 +24,7 @@ import type { OidcUserSessionBridge } from './oidc-user-session.bridge';
 
 const ISSUER = 'http://localhost:3010';
 const REDIRECT_URI = 'http://localhost:3000/auth/callback';
+const THIRD_PARTY_REDIRECT_URI = 'http://localhost:4000/auth/callback';
 export const TEST_OIDC_RESOURCE = 'http://localhost:3005';
 
 export function createTestAppEnv(
@@ -29,6 +33,7 @@ export function createTestAppEnv(
   return {
     OIDC_ISSUER: ISSUER,
     OIDC_ACCESS_TOKEN_TTL: 900,
+    OIDC_REFRESH_TOKEN_TTL: 604_800,
     OIDC_DEFAULT_RESOURCE: TEST_OIDC_RESOURCE,
     OIDC_JWKS_PRIVATE_KEY_PATH: '',
     JWT_USER_ACCESS_SECRET: 'dev-only-change-me-user-access-secret-32chars-min',
@@ -57,6 +62,7 @@ export function seedByteForgeWebClient(registry: OidcClientRegistry): void {
       responseTypes: ['code'],
       scopes: ['openid', 'profile', 'email'],
       pkceRequired: true,
+      trustedFirstParty: true,
       status: OAuthClientStatusEnum.ACTIVE,
       createdBy: null,
       createdAt: new Date(),
@@ -87,6 +93,99 @@ export function buildAuthorizeQuery(challenge: string) {
   };
 }
 
+export function seedThirdPartyClient(registry: OidcClientRegistry): void {
+  registry.seedForTest('third-party-app', {
+    client: {
+      id: 'uuid-2',
+      clientId: 'third-party-app',
+      clientSecretHash: null,
+      name: 'Third Party App',
+      description: 'External OAuth client for consent tests',
+      clientType: OAuthClientTypeEnum.PUBLIC,
+      grantTypes: ['authorization_code', 'refresh_token'],
+      responseTypes: ['code'],
+      scopes: ['openid', 'profile', 'email'],
+      pkceRequired: true,
+      trustedFirstParty: false,
+      status: OAuthClientStatusEnum.ACTIVE,
+      createdBy: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    uris: [
+      {
+        id: 'uri-2',
+        oauthClientId: 'uuid-2',
+        uri: THIRD_PARTY_REDIRECT_URI,
+        kind: OAuthClientUriKindEnum.REDIRECT,
+        createdAt: new Date(),
+      },
+    ],
+  });
+}
+
+export function buildThirdPartyAuthorizeQuery(challenge: string) {
+  return {
+    client_id: 'third-party-app',
+    redirect_uri: THIRD_PARTY_REDIRECT_URI,
+    response_type: 'code',
+    scope: 'openid profile email',
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    state: 'third-party-state',
+    nonce: 'third-party-nonce',
+  };
+}
+
+export function createDefaultOAuthClientRepositoryMock(): Pick<
+  OAuthClientRepository,
+  'findByClientId'
+> {
+  return {
+    findByClientId: jest.fn().mockImplementation((clientId: string) => {
+      if (clientId === 'byte-forge-web') {
+        return Promise.resolve({
+          id: 'uuid-1',
+          clientId: 'byte-forge-web',
+          name: 'Byte Forge Web',
+          description: 'test',
+          trustedFirstParty: true,
+        });
+      }
+
+      if (clientId === 'third-party-app') {
+        return Promise.resolve({
+          id: 'uuid-2',
+          clientId: 'third-party-app',
+          name: 'Third Party App',
+          description: 'External OAuth client for consent tests',
+          trustedFirstParty: false,
+        });
+      }
+
+      return Promise.resolve(null);
+    }),
+  };
+}
+
+export function createDefaultConsentRepositoryMock(): Pick<
+  OAuthConsentRepository,
+  'findRemembered' | 'upsert'
+> {
+  return {
+    findRemembered: jest.fn().mockResolvedValue(null),
+    upsert: jest.fn().mockResolvedValue({
+      id: 'consent-1',
+      userId: 'user-1',
+      oauthClientId: 'uuid-2',
+      scopes: ['openid', 'profile', 'email'],
+      remember: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }),
+  };
+}
+
 type CreateOidcTestServerOptions = {
   appEnv?: AppEnvService;
   registry?: OidcClientRegistry;
@@ -95,6 +194,8 @@ type CreateOidcTestServerOptions = {
     IdentityRepository,
     'findById' | 'findCredentialByUserId'
   >;
+  oauthClientRepository?: Pick<OAuthClientRepository, 'findByClientId'>;
+  consentRepository?: Pick<OAuthConsentRepository, 'findRemembered' | 'upsert'>;
 };
 
 function augmentRequest(req: IncomingMessage, pathname: string): void {
@@ -116,9 +217,16 @@ export async function createOidcTestServer(
   agent: ReturnType<typeof request.agent>;
   appEnv: AppEnvService;
   registry: OidcClientRegistry;
+  interactionService: OidcInteractionService;
+  provider: Awaited<ReturnType<OidcProviderFactory['create']>>;
+  consentRepository: Pick<OAuthConsentRepository, 'findRemembered' | 'upsert'>;
 }> {
   const appEnv = options.appEnv ?? createTestAppEnv();
   const registry = options.registry ?? new OidcClientRegistry({} as never);
+  const oauthClientRepository =
+    options.oauthClientRepository ?? createDefaultOAuthClientRepositoryMock();
+  const consentRepository =
+    options.consentRepository ?? createDefaultConsentRepositoryMock();
   const jwksService = new OidcJwksService(appEnv);
   const identityRepository = options.identityRepository ?? {
     findById: jest.fn().mockResolvedValue({
@@ -136,6 +244,13 @@ export async function createOidcTestServer(
   const interactionService = new OidcInteractionService(
     appEnv,
     options.sessionBridge as OidcUserSessionBridge,
+    oauthClientRepository as OAuthClientRepository,
+    consentRepository as OAuthConsentRepository,
+  );
+  const consentGrantService = new OidcConsentGrantService(
+    consentRepository as OAuthConsentRepository,
+    oauthClientRepository as OAuthClientRepository,
+    appEnv,
   );
   const resourceConfig = new OidcResourceConfigService(appEnv);
   const tokenClaims = new OidcTokenClaimsService(accountService);
@@ -147,6 +262,7 @@ export async function createOidcTestServer(
     interactionService,
     resourceConfig,
     tokenClaims,
+    consentGrantService,
   );
   const provider = await factory.create();
   const oidcHandler = provider.callback();
@@ -182,6 +298,9 @@ export async function createOidcTestServer(
     agent,
     appEnv,
     registry,
+    interactionService,
+    provider,
+    consentRepository,
   };
 }
 
@@ -249,6 +368,22 @@ export function exchangeAuthorizationCode(
         redirect_uri: REDIRECT_URI,
         code,
         code_verifier: verifier,
+      }).toString(),
+    );
+}
+
+export function exchangeRefreshToken(
+  agent: ReturnType<typeof request.agent>,
+  refreshToken: string,
+) {
+  return agent
+    .post(OIDC_ROUTE_PATHS.token)
+    .set('Content-Type', 'application/x-www-form-urlencoded')
+    .send(
+      new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: 'byte-forge-web',
+        refresh_token: refreshToken,
       }).toString(),
     );
 }
