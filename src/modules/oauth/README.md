@@ -53,7 +53,7 @@ Maps to [INTEGRATION.md](../../../docs/INTEGRATION.md) registration fields:
 
 ### Repository
 
-`OAuthClientRepository` — CRUD primitives only (no HTTP):
+`repositories/oauth-client.repository.ts` — `OAuthClientRepository` (CRUD primitives only, no HTTP):
 
 - `insert`, `insertUris`, `createWithUris`
 - `findById`, `findByClientId`, `findByIdWithUris`, `findUrisByClientId`

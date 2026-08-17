@@ -1,6 +1,6 @@
 import { AppEnvService } from '@/libs/config/app-env.service';
-import { OAuthConsentRepository } from '@/modules/oauth/oauth-consent.repository';
-import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
+import { OAuthConsentRepository } from '@/modules/oauth/repositories/oauth-consent.repository';
+import { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
 import { OidcInteractionService } from '../../login/oidc-interaction.service';
 import { OidcUserSessionBridge } from '../../login/oidc-user-session.bridge';
 import { createInteractionRequest } from '../../login/oidc-interaction-request.util';

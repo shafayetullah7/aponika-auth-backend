@@ -3,7 +3,7 @@ import {
   TOAuthClient,
   TOAuthClientRedirectUri,
 } from '@/_db/drizzle/schema/oauth';
-import { TOAuthClientWithUris } from '../oauth-client.repository';
+import { TOAuthClientWithUris } from '../repositories/oauth-client.repository';
 
 export type SerializedOAuthClient = {
   id: string;

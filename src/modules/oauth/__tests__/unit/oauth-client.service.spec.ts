@@ -5,7 +5,7 @@ import {
   OAuthClientUriKindEnum,
 } from '@/_db/drizzle/enum';
 import { OAuthClientConflictError } from '../../domain/oauth-client.errors';
-import { OAuthClientRepository } from '../../oauth-client.repository';
+import { OAuthClientRepository } from '../../repositories/oauth-client.repository';
 import { OAuthClientService } from '../../oauth-client.service';
 
 jest.mock('@/libs/crypto/password', () => ({

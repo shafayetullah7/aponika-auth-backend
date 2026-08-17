@@ -1,7 +1,7 @@
 import { OAuthClientUriKindEnum } from '@/_db/drizzle/enum';
 import { OAuthClientStatusEnum } from '@/_db/drizzle/enum/oauth-client-status.enum';
 import { OAuthClientTypeEnum } from '@/_db/drizzle/enum/oauth-client-type.enum';
-import { TOAuthClientWithUris } from '@/modules/oauth/oauth-client.repository';
+import { TOAuthClientWithUris } from '@/modules/oauth/repositories/oauth-client.repository';
 
 /** Payload shape returned by the oidc-provider Client storage adapter `find` method. */
 export type OidcClientPayload = {

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   OAuthClientRepository,
   TOAuthClientWithUris,
-} from '@/modules/oauth/oauth-client.repository';
+} from '@/modules/oauth/repositories/oauth-client.repository';
 import {
   mapOAuthClientToOidcPayload,
   OidcClientPayload,

@@ -157,7 +157,7 @@ Authorization code + PKCE and refresh-token rotation are handled inside `oidc-pr
 | App won't start / OIDC init error | `boot/oidc-boot.config.ts`, `boot/oidc-jwks.service.ts` |
 | 404 on `/.well-known` or `/auth` | `main.ts` exclusions, `oidc.service.ts` mount, `provider/oidc-routes.constants.ts` |
 | Login loop / no session after login | `login/oidc-interaction.service.ts`, `login/oidc-user-session.bridge.ts` |
-| Wrong redirect or client error | `client/oidc-client.registry.ts`, `client/oidc-client.mapper.ts`, parent `oauth-client.repository.ts` |
+| Wrong redirect or client error | `client/oidc-client.registry.ts`, `client/oidc-client.mapper.ts`, parent `repositories/oauth-client.repository.ts` |
 | Consent screen / grant issues | `consent/oidc-consent-grant.service.ts`, `consent/oidc-consent.controller.ts` |
 | Token missing claims or wrong `aud` | `token/oidc-token-claims.service.ts`, `token/oidc-resource.config.ts` |
 | `too_many_requests` on token | `token/oidc-token-rate-limiter.service.ts` |
@@ -168,8 +168,8 @@ Authorization code + PKCE and refresh-token rotation are handled inside `oidc-pr
 
 | Outside `oidc/` | Relationship |
 |-----------------|--------------|
-| `modules/oauth/oauth-client.repository.ts` | Client rows and URIs |
-| `modules/oauth/oauth-consent.repository.ts` | Stored consent grants |
+| `modules/oauth/repositories/oauth-client.repository.ts` | Client rows and URIs |
+| `modules/oauth/repositories/oauth-consent.repository.ts` | Stored consent grants |
 | `modules/session/` | F16 session cookies |
 | `modules/user-auth/` | Login identity |
 | `modules/identity/` | User profile for claims |

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppEnvService } from '@/libs/config/app-env.service';
-import { OAuthConsentRepository } from '@/modules/oauth/oauth-consent.repository';
-import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
+import { OAuthConsentRepository } from '@/modules/oauth/repositories/oauth-consent.repository';
+import { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
 
 type OidcLoadGrantContext = {
   oidc: {

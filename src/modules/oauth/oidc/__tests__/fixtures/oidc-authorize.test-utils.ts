@@ -9,8 +9,8 @@ import {
 } from '@/_db/drizzle/enum';
 import type { AppEnvService } from '@/libs/config/app-env.service';
 import type { IdentityRepository } from '@/modules/identity/identity.repository';
-import type { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
-import type { OAuthConsentRepository } from '@/modules/oauth/oauth-consent.repository';
+import type { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
+import type { OAuthConsentRepository } from '@/modules/oauth/repositories/oauth-consent.repository';
 import { OidcAccountService } from '../../login/oidc-account.service';
 import { OidcClientRegistry } from '../../client/oidc-client.registry';
 import { OidcConsentGrantService } from '../../consent/oidc-consent-grant.service';

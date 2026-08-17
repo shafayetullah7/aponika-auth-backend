@@ -25,7 +25,7 @@ import {
   OAuthClientRepository,
   TOAuthClientUriInput,
   TOAuthClientWithUris,
-} from './oauth-client.repository';
+} from './repositories/oauth-client.repository';
 
 const DEFAULT_GRANT_TYPES = ['authorization_code', 'refresh_token'];
 const DEFAULT_RESPONSE_TYPES = ['code'];

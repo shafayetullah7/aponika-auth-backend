@@ -1,7 +1,7 @@
 import { AuditActionEnum } from '@/_db/drizzle/enum/audit-action.enum';
 import { AuditActorTypeEnum } from '@/_db/drizzle/enum/audit-actor-type.enum';
 import { AuditService } from '@/modules/audit/audit.service';
-import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
+import { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
 import { OidcTokenAuditListener } from '../../token/oidc-token-audit.listener';
 
 describe('OidcTokenAuditListener', () => {

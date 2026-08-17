@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AppEnvService } from '@/libs/config/app-env.service';
-import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
+import { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
 import { getAllowedOrigins } from './allowed-origins';
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
