@@ -14,6 +14,7 @@ export const AuditActionEnum = {
   CLIENT_ENABLED: 'client.enabled',
 
   USER_REGISTERED: 'user.registered',
+  USER_VERIFICATION_RESENT: 'user.verification.resent',
   USER_LOGIN_SUCCESS: 'user.login.success',
   USER_LOGIN_FAILURE: 'user.login.failure',
   USER_LOGOUT: 'user.logout',

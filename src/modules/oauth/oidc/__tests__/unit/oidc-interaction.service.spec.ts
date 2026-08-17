@@ -1,9 +1,25 @@
 import { AppEnvService } from '@/libs/config/app-env.service';
 import { OAuthConsentRepository } from '@/modules/oauth/repositories/oauth-consent.repository';
 import { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
+import { OidcHostedErrorService } from '../../login/oidc-hosted-error.service';
 import { OidcInteractionService } from '../../login/oidc-interaction.service';
 import { OidcUserSessionBridge } from '../../login/oidc-user-session.bridge';
-import { createInteractionRequest } from '../../login/oidc-interaction-request.util';
+import { createInteractionRequest, createCapturingInteractionResponse } from '../../login/oidc-interaction-request.util';
+
+function createService(): OidcInteractionService {
+  const appEnv = {
+    OIDC_ISSUER: 'http://localhost:3010',
+    AUTH_FRONTEND_URL: 'http://localhost:3011',
+  } as AppEnvService;
+
+  return new OidcInteractionService(
+    appEnv,
+    {} as OidcUserSessionBridge,
+    {} as OAuthClientRepository,
+    {} as OAuthConsentRepository,
+    new OidcHostedErrorService(appEnv),
+  );
+}
 
 describe('OidcInteractionService denyConsent', () => {
   it('finishes the interaction with access_denied using the interaction uid', async () => {
@@ -40,15 +56,7 @@ describe('OidcInteractionService denyConsent', () => {
       interactionFinished: jest.fn(),
     };
 
-    const service = new OidcInteractionService(
-      {
-        OIDC_ISSUER: 'http://localhost:3010',
-        AUTH_FRONTEND_URL: 'http://localhost:3011',
-      } as AppEnvService,
-      {} as OidcUserSessionBridge,
-      {} as OAuthClientRepository,
-      {} as OAuthConsentRepository,
-    );
+    const service = createService();
 
     const req = createInteractionRequest('interaction-uid', 'session=test');
     const result = await service.denyConsent(
@@ -66,5 +74,74 @@ describe('OidcInteractionService denyConsent', () => {
     });
     expect(provider.interactionFinished).not.toHaveBeenCalled();
     expect(result.redirectUrl).toContain('error=access_denied');
+  });
+});
+
+describe('OidcInteractionService resume', () => {
+  it('redirects to hosted error when interaction session is missing', async () => {
+    const appEnv = {
+      OIDC_ISSUER: 'http://localhost:3010',
+      AUTH_FRONTEND_URL: 'http://localhost:3011',
+    } as AppEnvService;
+    const sessionBridge = {
+      resolveAuthenticatedUser: jest.fn().mockResolvedValue({
+        user: { id: 'user-1' },
+      }),
+    } as unknown as OidcUserSessionBridge;
+    const service = new OidcInteractionService(
+      appEnv,
+      sessionBridge,
+      {} as OAuthClientRepository,
+      {} as OAuthConsentRepository,
+      new OidcHostedErrorService(appEnv),
+    );
+    const provider = {
+      interactionDetails: jest.fn().mockRejectedValue(
+        Object.assign(new Error('interaction session not found'), {
+          name: 'SessionNotFound',
+        }),
+      ),
+      interactionFinished: jest.fn(),
+    };
+    const { res, getRedirectUrl } = createCapturingInteractionResponse();
+    const req = createInteractionRequest('interaction-uid', 'session=test');
+
+    await service.resume(req, res, provider as never);
+
+    expect(provider.interactionDetails).toHaveBeenCalled();
+    expect(provider.interactionFinished).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(303);
+    const redirectUrl = new URL(getRedirectUrl()!);
+    expect(redirectUrl.origin).toBe('http://localhost:3011');
+    expect(redirectUrl.pathname).toBe('/oauth/error');
+    expect(redirectUrl.searchParams.get('error')).toBe('interaction_expired');
+  });
+
+  it('redirects unauthenticated requests without uid to hosted invalid_request error', async () => {
+    const appEnv = {
+      OIDC_ISSUER: 'http://localhost:3010',
+      AUTH_FRONTEND_URL: 'http://localhost:3011',
+    } as AppEnvService;
+    const sessionBridge = {
+      resolveAuthenticatedUser: jest.fn().mockResolvedValue(null),
+    } as unknown as OidcUserSessionBridge;
+    const service = new OidcInteractionService(
+      appEnv,
+      sessionBridge,
+      {} as OAuthClientRepository,
+      {} as OAuthConsentRepository,
+      new OidcHostedErrorService(appEnv),
+    );
+    const { res, getRedirectUrl } = createCapturingInteractionResponse();
+    const req = createInteractionRequest('', '');
+
+    await service.resume(req, res, {} as never);
+
+    expect(res.statusCode).toBe(303);
+    const redirectUrl = new URL(getRedirectUrl()!);
+    expect(redirectUrl.searchParams.get('error')).toBe('invalid_request');
+    expect(redirectUrl.searchParams.get('error_description')).toContain(
+      'Missing OIDC interaction id',
+    );
   });
 });

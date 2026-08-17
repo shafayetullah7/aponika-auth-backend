@@ -37,6 +37,7 @@ describe('OIDC discovery integration', () => {
     const accountService = new OidcAccountService(identityRepository);
     const resourceConfig = new OidcResourceConfigService(appEnv);
     const tokenClaims = new OidcTokenClaimsService(accountService);
+    const hostedErrorService = new OidcHostedErrorService(appEnv);
     const interactionService = new OidcInteractionService(
       appEnv,
       {
@@ -44,13 +45,13 @@ describe('OIDC discovery integration', () => {
       } as never,
       createDefaultOAuthClientRepositoryMock() as never,
       createDefaultConsentRepositoryMock() as never,
+      hostedErrorService,
     );
     const consentGrantService = new OidcConsentGrantService(
       createDefaultConsentRepositoryMock() as never,
       createDefaultOAuthClientRepositoryMock() as never,
       appEnv,
     );
-    const hostedErrorService = new OidcHostedErrorService(appEnv);
     const logoutUiService = new OidcLogoutUiService(appEnv);
     const factory = new OidcProviderFactory(
       appEnv,
@@ -63,6 +64,7 @@ describe('OIDC discovery integration', () => {
       consentGrantService,
       hostedErrorService,
       logoutUiService,
+      {} as never,
     );
     const provider = await factory.create();
 

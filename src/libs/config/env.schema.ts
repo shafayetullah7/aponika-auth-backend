@@ -31,6 +31,12 @@ export const envSchema = z.object({
   /** OIDC refresh token TTL in seconds (default 7 days). */
   OIDC_REFRESH_TOKEN_TTL: z.coerce.number().int().positive().default(604_800),
 
+  /** OIDC interaction TTL in seconds (default 1 hour). */
+  OIDC_INTERACTION_TTL: z.coerce.number().int().positive().default(3600),
+
+  /** OIDC ephemeral artifact storage (`memory` for tests, `postgres` otherwise). */
+  OIDC_STORAGE_BACKEND: z.enum(['memory', 'postgres']).optional(),
+
   /**
    * Default resource indicator / JWT `aud` for access tokens (Byte Forge API in dev).
    */

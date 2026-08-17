@@ -10,6 +10,7 @@ import { UserAuthController } from './user-auth.controller';
 import { UserAuthService } from './user-auth.service';
 import { UserLoginRateLimiterService } from './user-login-rate-limiter.service';
 import { UserRegistrationRateLimiterService } from './user-registration-rate-limiter.service';
+import { UserVerificationResendRateLimiterService } from './user-verification-resend-rate-limiter.service';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UserRegistrationRateLimiterService } from './user-registration-rate-lim
     UserAuthService,
     UserLoginRateLimiterService,
     UserRegistrationRateLimiterService,
+    UserVerificationResendRateLimiterService,
     AccountService,
   ],
   exports: [UserAuthService],

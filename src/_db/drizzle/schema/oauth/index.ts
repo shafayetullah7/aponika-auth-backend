@@ -4,3 +4,4 @@ export * from './oauth-client-uri-kind.enum.schema';
 export * from './oauth-client.schema';
 export * from './oauth-client-redirect-uri.schema';
 export * from './oauth-consent.schema';
+export * from './oidc-provider-storage.schema';

@@ -23,6 +23,7 @@ import { getClientIp } from '@/libs/utils/get-client-ip';
 import { parseDeviceInfo } from '@/libs/utils/parse-device-info';
 import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { UserAuthService } from './user-auth.service';
 
@@ -66,6 +67,29 @@ export class UserAuthController {
     return this.responseService.success({
       message: this.i18n.t('message.success.userEmailVerified', { lang }),
       data: result,
+    });
+  }
+
+  @ApiOperation({ summary: 'Resend email verification link' })
+  @ApiResponse({ status: 200, description: 'Generic success (anti-enumeration)' })
+  @ApiResponse({ status: 429, description: 'Too many resend attempts' })
+  @HttpCode(HttpStatus.OK)
+  @Post('resend-verification')
+  async resendVerification(
+    @Body() payload: ResendVerificationDto,
+    @Req() req: Request,
+  ) {
+    const lang = I18nContext.current()?.lang ?? 'en';
+
+    await this.userAuthService.resendVerificationEmail(
+      payload,
+      lang,
+      getClientIp(req),
+    );
+
+    return this.responseService.success({
+      message: this.i18n.t('message.success.userVerificationResent', { lang }),
+      data: null,
     });
   }
 

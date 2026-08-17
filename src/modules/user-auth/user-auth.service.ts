@@ -11,6 +11,7 @@ import {
   TUserProfile,
 } from '@/_db/drizzle/schema/identity';
 import { TUserSession } from '@/_db/drizzle/schema/session/user-session.schema';
+import { DrizzleTx } from '@/_db/drizzle/types';
 import { AppEnvService } from '@/libs/config/app-env.service';
 import { hashPassword, verifyPassword } from '@/libs/crypto/password';
 import { CustomException } from '@/libs/exceptions/custom.exception';
@@ -29,9 +30,11 @@ import { IdentityRepository } from '@/modules/identity/identity.repository';
 import { UserSessionService } from '@/modules/session/user-session.service';
 import { LoginUserInput } from './dto/login-user.dto';
 import { RegisterUserInput } from './dto/register-user.dto';
+import { ResendVerificationInput } from './dto/resend-verification.dto';
 import { VerifyEmailInput } from './dto/verify-email.dto';
 import { UserLoginRateLimiterService } from './user-login-rate-limiter.service';
 import { UserRegistrationRateLimiterService } from './user-registration-rate-limiter.service';
+import { UserVerificationResendRateLimiterService } from './user-verification-resend-rate-limiter.service';
 
 export type PublicUser = {
   id: string;
@@ -60,6 +63,7 @@ export class UserAuthService {
     private readonly userSessionService: UserSessionService,
     private readonly userLoginRateLimiter: UserLoginRateLimiterService,
     private readonly userRegistrationRateLimiter: UserRegistrationRateLimiterService,
+    private readonly userVerificationResendRateLimiter: UserVerificationResendRateLimiterService,
     private readonly auditService: AuditService,
     private readonly mailService: MailService,
     private readonly drizzleService: DrizzleService,
@@ -88,11 +92,6 @@ export class UserAuthService {
     }
 
     const passwordHash = await hashPassword(payload.password);
-    const token = generateEmailVerificationToken();
-    const tokenHash = hashEmailVerificationToken(token);
-    const expiresAt = new Date(
-      Date.now() + EMAIL_VERIFICATION_EXPIRY_HOURS * 60 * 60 * 1000,
-    );
 
     const created = await this.drizzleService.transaction(async (tx) => {
       const result = await this.identityRepository.createUserWithCredential(
@@ -105,11 +104,11 @@ export class UserAuthService {
         tx,
       );
 
-      await this.emailVerificationRepository.create(
+      await this.issueEmailVerificationToken(
         {
           userId: result.user.id,
-          tokenHash,
-          expiresAt,
+          email: result.user.email,
+          displayName: result.profile?.displayName ?? undefined,
         },
         tx,
       );
@@ -129,16 +128,6 @@ export class UserAuthService {
 
       return result;
     });
-
-    try {
-      await this.mailService.sendEmailVerification({
-        to: created.user.email,
-        token,
-        displayName: created.profile?.displayName ?? undefined,
-      });
-    } catch (error) {
-      console.error('Failed to send email verification message', error);
-    }
 
     return this.toPublicUser(
       created.user,
@@ -189,6 +178,61 @@ export class UserAuthService {
     });
 
     return { emailVerified: true };
+  }
+
+  async resendVerificationEmail(
+    payload: ResendVerificationInput,
+    lang: string = 'en',
+    ip?: string | null,
+  ): Promise<void> {
+    const email = payload.email.trim();
+    const rateLimitKey = ip?.trim() || email.toLowerCase();
+
+    this.userVerificationResendRateLimiter.assertCanRequest(rateLimitKey, lang);
+    this.userVerificationResendRateLimiter.assertCanSend(email, lang);
+    this.userVerificationResendRateLimiter.recordRequest(rateLimitKey);
+
+    const record =
+      await this.identityRepository.findByEmailWithCredentialAndProfile(email);
+
+    if (
+      !record ||
+      record.credential.emailVerified ||
+      record.user.status === UserStatusEnum.SUSPENDED
+    ) {
+      return;
+    }
+
+    await this.drizzleService.transaction(async (tx) => {
+      await this.emailVerificationRepository.consumeActiveForUser(
+        record.user.id,
+        tx,
+      );
+
+      await this.issueEmailVerificationToken(
+        {
+          userId: record.user.id,
+          email: record.user.email,
+          displayName: record.profile?.displayName ?? undefined,
+        },
+        tx,
+      );
+
+      await this.auditService.record(
+        {
+          actorType: AuditActorTypeEnum.USER,
+          actorId: record.user.id,
+          action: AuditActionEnum.USER_VERIFICATION_RESENT,
+          resourceType: 'user',
+          resourceId: record.user.id,
+          metadata: { email: record.user.email },
+          ip,
+        },
+        tx,
+      );
+    });
+
+    this.userVerificationResendRateLimiter.recordSent(email);
   }
 
   async login(
@@ -444,6 +488,40 @@ export class UserAuthService {
       statusCode: HttpStatus.BAD_REQUEST,
       errorCode: ErrorCode.INVALID_EMAIL_VERIFICATION_TOKEN,
     });
+  }
+
+  private async issueEmailVerificationToken(
+    input: {
+      userId: string;
+      email: string;
+      displayName?: string;
+    },
+    tx?: DrizzleTx,
+  ): Promise<void> {
+    const token = generateEmailVerificationToken();
+    const tokenHash = hashEmailVerificationToken(token);
+    const expiresAt = new Date(
+      Date.now() + EMAIL_VERIFICATION_EXPIRY_HOURS * 60 * 60 * 1000,
+    );
+
+    await this.emailVerificationRepository.create(
+      {
+        userId: input.userId,
+        tokenHash,
+        expiresAt,
+      },
+      tx,
+    );
+
+    try {
+      await this.mailService.sendEmailVerification({
+        to: input.email,
+        token,
+        displayName: input.displayName,
+      });
+    } catch (error) {
+      console.error('Failed to send email verification message', error);
+    }
   }
 
   private toPublicUser(

@@ -61,4 +61,17 @@ export class EmailVerificationRepository {
       .set({ consumedAt: new Date() })
       .where(eq(userEmailVerificationsTable.id, id));
   }
+
+  async consumeActiveForUser(userId: string, tx?: DrizzleTx): Promise<void> {
+    const executor = this.drizzleService.getExecutor(tx);
+    await executor
+      .update(userEmailVerificationsTable)
+      .set({ consumedAt: new Date() })
+      .where(
+        and(
+          eq(userEmailVerificationsTable.userId, userId),
+          isNull(userEmailVerificationsTable.consumedAt),
+        ),
+      );
+  }
 }

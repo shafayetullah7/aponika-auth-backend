@@ -2,7 +2,7 @@
 
 NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-provider) per [ADR-001](../../../docs/adr/ADR-001-oidc-provider-strategy.md).
 
-**How to navigate the code:** [CODE_FLOW.md](./CODE_FLOW.md) — lifecycle diagrams, logical groups, and a debugging guide.
+**How to navigate the code:** [CODE_FLOW.md](./CODE_FLOW.md) — lifecycle diagrams, logical groups, and a debugging guide. For error/edge-case coverage see [ERROR_HANDLING_AUDIT.md](./ERROR_HANDLING_AUDIT.md).
 
 ## Entry points
 
@@ -48,7 +48,9 @@ Files are listed in **runtime order**, not alphabetically. Full detail: [CODE_FL
 | `provider/oidc-provider.factory.ts` | Dynamic ESM import + Provider construction |
 | `provider/oidc-provider.types.ts` | Provider event/context types |
 | `provider/oidc-routes.constants.ts` | Protocol paths, global prefix exclusions, path helpers |
-| `provider/oidc-adapter.factory.ts` | Client adapter + in-memory adapters for other models (dev) |
+| `provider/oidc-adapter.factory.ts` | `Client` adapter + postgres (runtime) or memory (`NODE_ENV=test`) |
+| `provider/oidc-postgres.adapter.ts` | Postgres-backed oidc-provider storage adapter |
+| `provider/oidc-provider-storage.repository.ts` | `oidc_provider_storage` table access |
 | `provider/oidc-client.adapter.ts` | `Client` storage adapter `find()` |
 
 ### Client resolution

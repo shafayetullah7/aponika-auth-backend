@@ -39,6 +39,7 @@ describe('UserAuthService', () => {
     create: jest.fn(),
     findActiveByTokenHash: jest.fn(),
     markConsumed: jest.fn(),
+    consumeActiveForUser: jest.fn(),
   };
 
   const userSessionService = {
@@ -57,6 +58,12 @@ describe('UserAuthService', () => {
   const userRegistrationRateLimiter = {
     assertCanAttempt: jest.fn(),
     recordAttempt: jest.fn(),
+  };
+  const userVerificationResendRateLimiter = {
+    assertCanRequest: jest.fn(),
+    assertCanSend: jest.fn(),
+    recordRequest: jest.fn(),
+    recordSent: jest.fn(),
   };
 
   const auditService = {
@@ -134,6 +141,7 @@ describe('UserAuthService', () => {
       userSessionService as unknown as UserSessionService,
       userLoginRateLimiter as unknown as UserLoginRateLimiterService,
       userRegistrationRateLimiter as unknown as import('../../user-registration-rate-limiter.service').UserRegistrationRateLimiterService,
+      userVerificationResendRateLimiter as unknown as import('../../user-verification-resend-rate-limiter.service').UserVerificationResendRateLimiterService,
       auditService as unknown as AuditService,
       mailService as unknown as MailService,
       drizzleService as unknown as DrizzleService,
@@ -336,6 +344,104 @@ describe('UserAuthService', () => {
 
     expect(userSessionService.createSession).not.toHaveBeenCalled();
     expect(userLoginRateLimiter.recordFailedAttempt).toHaveBeenCalled();
+  });
+
+  it('resends verification email for unverified users', async () => {
+    identityRepository.findByEmailWithCredentialAndProfile.mockResolvedValue({
+      user,
+      credential,
+      profile,
+    });
+    emailVerificationRepository.create.mockResolvedValue({
+      id: 'verification-2',
+    });
+
+    await service.resendVerificationEmail(
+      { email: user.email },
+      'en',
+      '127.0.0.1',
+    );
+
+    expect(emailVerificationRepository.consumeActiveForUser).toHaveBeenCalledWith(
+      user.id,
+      'tx',
+    );
+    expect(emailVerificationRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: user.id,
+        tokenHash: 'hash:plain-verification-token',
+      }),
+      'tx',
+    );
+    expect(mailService.sendEmailVerification).toHaveBeenCalledWith({
+      to: user.email,
+      token: 'plain-verification-token',
+      displayName: profile.displayName,
+    });
+    expect(auditService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AuditActionEnum.USER_VERIFICATION_RESENT,
+        actorId: user.id,
+      }),
+      'tx',
+    );
+    expect(userVerificationResendRateLimiter.recordSent).toHaveBeenCalledWith(
+      user.email,
+    );
+  });
+
+  it('no-ops resend for unknown email', async () => {
+    identityRepository.findByEmailWithCredentialAndProfile.mockResolvedValue(
+      null,
+    );
+
+    await service.resendVerificationEmail(
+      { email: 'missing@example.com' },
+      'en',
+      '127.0.0.1',
+    );
+
+    expect(emailVerificationRepository.consumeActiveForUser).not.toHaveBeenCalled();
+    expect(mailService.sendEmailVerification).not.toHaveBeenCalled();
+    expect(userVerificationResendRateLimiter.recordSent).not.toHaveBeenCalled();
+  });
+
+  it('no-ops resend for already verified users', async () => {
+    identityRepository.findByEmailWithCredentialAndProfile.mockResolvedValue({
+      user,
+      credential: { ...credential, emailVerified: true },
+      profile,
+    });
+
+    await service.resendVerificationEmail(
+      { email: user.email },
+      'en',
+      '127.0.0.1',
+    );
+
+    expect(emailVerificationRepository.consumeActiveForUser).not.toHaveBeenCalled();
+    expect(mailService.sendEmailVerification).not.toHaveBeenCalled();
+    expect(userVerificationResendRateLimiter.recordSent).not.toHaveBeenCalled();
+  });
+
+  it('throws when resend is rate limited', async () => {
+    userVerificationResendRateLimiter.assertCanRequest.mockImplementation(() => {
+      throw {
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        errorCode: ErrorCode.TOO_MANY_REQUESTS,
+      };
+    });
+
+    await expect(
+      service.resendVerificationEmail(
+        { email: user.email },
+        'en',
+        '127.0.0.1',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: HttpStatus.TOO_MANY_REQUESTS,
+      errorCode: ErrorCode.TOO_MANY_REQUESTS,
+    });
   });
 
   it('rejects login with wrong password', async () => {

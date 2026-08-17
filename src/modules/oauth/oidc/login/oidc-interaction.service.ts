@@ -15,6 +15,7 @@ import {
 } from '../provider/oidc-routes.constants';
 import type { OidcProviderInstance, OidcStoredInteraction } from '../provider/oidc-provider.factory';
 import { createCapturingInteractionResponse } from './oidc-interaction-request.util';
+import { OidcHostedErrorService } from './oidc-hosted-error.service';
 import { OidcUserSessionBridge } from './oidc-user-session.bridge';
 
 type OidcInteractionPrompt = {
@@ -66,6 +67,7 @@ export class OidcInteractionService {
     private readonly sessionBridge: OidcUserSessionBridge,
     private readonly oauthClientRepository: OAuthClientRepository,
     private readonly consentRepository: OAuthConsentRepository,
+    private readonly hostedErrorService: OidcHostedErrorService,
   ) {}
 
   buildInteractionPath(uid: string): string {
@@ -97,11 +99,14 @@ export class OidcInteractionService {
     res: Response,
     provider: OidcProviderInstance,
   ): Promise<void> {
+    const uid = this.readInteractionUid(req);
     const auth = await this.sessionBridge.resolveAuthenticatedUser(req, res);
     if (!auth) {
-      const uid = this.readInteractionUid(req);
       if (!uid) {
-        res.status(400).send('Missing interaction id');
+        this.redirectToHostedError(res, {
+          error: 'invalid_request',
+          error_description: 'Missing OIDC interaction id.',
+        });
         return;
       }
 
@@ -111,57 +116,68 @@ export class OidcInteractionService {
       return;
     }
 
-    const details = (await provider.interactionDetails(
-      req,
-      res,
-    )) as OidcInteractionDetails;
+    try {
+      const details = (await provider.interactionDetails(
+        req,
+        res,
+      )) as OidcInteractionDetails;
 
-    if (details.prompt.name === 'login') {
+      if (details.prompt.name === 'login') {
+        await provider.interactionFinished(
+          req,
+          res,
+          { login: { accountId: auth.user.id } },
+          { mergeWithLastSubmission: false },
+        );
+        return;
+      }
+
+      if (details.prompt.name === 'consent') {
+        const client = await this.oauthClientRepository.findByClientId(
+          details.params.client_id,
+        );
+        if (client?.trustedFirstParty) {
+          // Cookie is present on GET /interaction/:uid — finish in-process (303).
+          await this.finishConsentInteraction(req, res, provider, details, {
+            remember: false,
+          });
+          return;
+        }
+
+        if (!uid) {
+          this.redirectToHostedError(res, {
+            error: 'invalid_request',
+            error_description: 'Missing OIDC interaction id.',
+          });
+          return;
+        }
+
+        res.statusCode = 302;
+        res.setHeader('Location', this.buildConsentRedirectUrl(uid));
+        res.end();
+        return;
+      }
+
+      this.logger.warn(
+        `Unsupported OIDC interaction prompt: ${details.prompt.name}`,
+      );
       await provider.interactionFinished(
         req,
         res,
-        { login: { accountId: auth.user.id } },
+        {
+          error: 'server_error',
+          error_description: 'Unsupported interaction prompt',
+        },
         { mergeWithLastSubmission: false },
       );
-      return;
-    }
-
-    if (details.prompt.name === 'consent') {
-      const client = await this.oauthClientRepository.findByClientId(
-        details.params.client_id,
+    } catch (error) {
+      this.redirectInteractionResumeError(
+        res,
+        error,
+        uid,
+        this.readStateFromInteractionError(error),
       );
-      if (client?.trustedFirstParty) {
-        // Cookie is present on GET /interaction/:uid — finish in-process (303).
-        await this.finishConsentInteraction(req, res, provider, details, {
-          remember: false,
-        });
-        return;
-      }
-
-      const uid = this.readInteractionUid(req);
-      if (!uid) {
-        res.status(400).send('Missing interaction id');
-        return;
-      }
-
-      res.statusCode = 302;
-      res.setHeader('Location', this.buildConsentRedirectUrl(uid));
-      res.end();
-      return;
     }
-
-    this.logger.warn(
-      `Unsupported OIDC interaction prompt: ${details.prompt.name}`,
-    );
-    await provider.interactionFinished(
-      req,
-      res,
-      {
-        error: 'server_error',
-        error_description: 'Unsupported interaction prompt',
-      },
-      { mergeWithLastSubmission: false },
-    );
   }
 
   async getConsentPromptDetails(
@@ -439,12 +455,87 @@ export class OidcInteractionService {
     return interaction.returnTo;
   }
 
-  private toConsentInteractionError(error: unknown, uid?: string): never {
+  private redirectToHostedError(
+    res: Response,
+    payload: {
+      error?: string;
+      error_description?: string;
+      state?: string;
+    },
+  ): void {
+    res.statusCode = 303;
+    res.setHeader(
+      'Location',
+      this.hostedErrorService.buildHostedErrorUrl(payload),
+    );
+    res.end();
+  }
+
+  private redirectInteractionResumeError(
+    res: Response,
+    error: unknown,
+    uid?: string,
+    state?: string,
+  ): void {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorDescription =
+      error instanceof Error && 'error_description' in error
+        ? String(
+            (error as Error & { error_description?: string }).error_description,
+          )
+        : undefined;
+
+    this.logger.warn(
+      `Failed to resume OIDC interaction${uid ? ` for ${uid}` : ''}: ${errorDescription ?? message}`,
+    );
+
+    if (this.isInteractionSessionError(error)) {
+      this.redirectToHostedError(res, {
+        error: 'interaction_expired',
+        error_description:
+          'OIDC interaction session is missing or expired. Start sign-in again from the application.',
+        state,
+      });
+      return;
+    }
+
+    this.redirectToHostedError(res, {
+      error: 'server_error',
+      error_description:
+        'OIDC interaction could not be completed. Start sign-in again from the application.',
+      state,
+    });
+  }
+
+  private isInteractionSessionError(error: unknown): boolean {
     const message = error instanceof Error ? error.message : String(error);
     const errorName =
       error instanceof Error && 'name' in error
         ? String(error.name)
         : undefined;
+
+    return (
+      errorName === 'SessionNotFound'
+      || message.includes('interaction session id cookie not found')
+      || message.includes('interaction session not found')
+      || message.includes('session not found')
+    );
+  }
+
+  private readStateFromInteractionError(error: unknown): string | undefined {
+    if (
+      error instanceof Error
+      && 'state' in error
+      && typeof (error as Error & { state?: unknown }).state === 'string'
+    ) {
+      return (error as Error & { state: string }).state;
+    }
+
+    return undefined;
+  }
+
+  private toConsentInteractionError(error: unknown, uid?: string): never {
+    const message = error instanceof Error ? error.message : String(error);
     const errorDescription =
       error instanceof Error && 'error_description' in error
         ? String(
@@ -456,12 +547,7 @@ export class OidcInteractionService {
       `Failed to read OIDC interaction details${uid ? ` for ${uid}` : ''}: ${errorDescription ?? message}`,
     );
 
-    if (
-      errorName === 'SessionNotFound'
-      || message.includes('interaction session id cookie not found')
-      || message.includes('interaction session not found')
-      || message.includes('session not found')
-    ) {
+    if (this.isInteractionSessionError(error)) {
       throw new BadRequestException(
         'OIDC interaction session is missing or expired. Start sign-in again from the application.',
       );
@@ -494,7 +580,12 @@ export class OidcInteractionService {
   }
 
   private readInteractionUid(req: Request): string | undefined {
-    const uid = Array.isArray(req.params.uid) ? req.params.uid[0] : req.params.uid;
+    const rawUid = req.params?.uid;
+    if (!rawUid) {
+      return undefined;
+    }
+
+    const uid = Array.isArray(rawUid) ? rawUid[0] : rawUid;
     return uid || undefined;
   }
 }

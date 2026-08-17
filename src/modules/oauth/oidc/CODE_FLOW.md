@@ -157,12 +157,14 @@ Authorization code + PKCE and refresh-token rotation are handled inside `oidc-pr
 | App won't start / OIDC init error | `boot/oidc-boot.config.ts`, `boot/oidc-jwks.service.ts` |
 | 404 on `/.well-known` or `/auth` | `main.ts` exclusions, `oidc.service.ts` mount, `provider/oidc-routes.constants.ts` |
 | Login loop / no session after login | `login/oidc-interaction.service.ts`, `login/oidc-user-session.bridge.ts` |
+| Raw 400 JSON on `/interaction/:uid` | [ERROR_HANDLING_AUDIT.md](./ERROR_HANDLING_AUDIT.md) §Phase 2 — stale/expired interaction |
 | Wrong redirect or client error | `client/oidc-client.registry.ts`, `client/oidc-client.mapper.ts`, parent `repositories/oauth-client.repository.ts` |
 | Consent screen / grant issues | `consent/oidc-consent-grant.service.ts`, `consent/oidc-consent.controller.ts` |
 | Token missing claims or wrong `aud` | `token/oidc-token-claims.service.ts`, `token/oidc-resource.config.ts` |
 | `too_many_requests` on token | `token/oidc-token-rate-limiter.service.ts` |
 | Logout doesn't clear session | `logout/oidc-end-session.listener.ts`, `logout/oidc-logout-ui.service.ts` |
 | Hosted error page instead of redirect | `login/oidc-hosted-error.service.ts` |
+| Interaction expired / 400 JSON in browser | [ERROR_HANDLING_AUDIT.md](./ERROR_HANDLING_AUDIT.md) |
 
 ## Module boundary
 

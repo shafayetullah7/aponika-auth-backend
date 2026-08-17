@@ -8,6 +8,7 @@ End-user registration, email verification (F15), and login/session APIs (F16).
 |--------|------|------|
 | `POST` | `/api/v1/auth/register` | Public |
 | `POST` | `/api/v1/auth/verify-email` | Public |
+| `POST` | `/api/v1/auth/resend-verification` | Public |
 | `POST` | `/api/v1/auth/login` | Public |
 | `POST` | `/api/v1/auth/refresh` | Cookie refresh |
 | `POST` | `/api/v1/auth/logout` | `UserAuthGuard` |
@@ -58,10 +59,14 @@ Separate from admin cookies (`adminAccessToken`, `adminRefreshToken`, `xsrf-toke
 - New users start with `email_verified = false`.
 - **Login is rejected** until email is verified (same generic `invalidCredentials` response).
 - OIDC authorize (F20) must also reject unverified accounts.
+- Verification links expire after **24 hours** and are one-time.
+- `POST /api/v1/auth/resend-verification` issues a fresh link for unverified accounts only; response is always generic (anti-enumeration). Previous unconsumed tokens are invalidated.
 
 ## Rate limiting
 
 In-memory login rate limit: 10 attempts per 15 minutes per `ip:email` key.
+
+Resend verification: 5 requests per 15 minutes per IP (email fallback), 60s cooldown per email between sends.
 
 ## Schema
 

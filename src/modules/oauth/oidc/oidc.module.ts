@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { DrizzleModule } from '@/_db/drizzle/drizzle.module';
 import { CookieModule } from '@/libs/cookie/cookie.module';
 import { ResponseModule } from '@/libs/response/response.module';
 import { AuditModule } from '@/modules/audit/audit.module';
@@ -19,6 +20,7 @@ import { OidcEndSessionListener } from './logout/oidc-end-session.listener';
 import { OidcLogoutUiService } from './logout/oidc-logout-ui.service';
 import { OidcJwksService } from './boot/oidc-jwks.service';
 import { OidcProviderFactory } from './provider/oidc-provider.factory';
+import { OidcProviderStorageRepository } from './provider/oidc-provider-storage.repository';
 import { OidcService } from './oidc.service';
 import { OidcResourceConfigService } from './token/oidc-resource.config';
 import { OidcTokenAuditListener } from './token/oidc-token-audit.listener';
@@ -27,6 +29,7 @@ import { OidcTokenRateLimiterService } from './token/oidc-token-rate-limiter.ser
 
 @Module({
   imports: [
+    DrizzleModule,
     forwardRef(() => OAuthModule),
     IdentityModule,
     SessionModule,
@@ -51,6 +54,7 @@ import { OidcTokenRateLimiterService } from './token/oidc-token-rate-limiter.ser
     OidcTokenClaimsService,
     OidcTokenAuditListener,
     OidcTokenRateLimiterService,
+    OidcProviderStorageRepository,
     OidcProviderFactory,
     OidcService,
   ],

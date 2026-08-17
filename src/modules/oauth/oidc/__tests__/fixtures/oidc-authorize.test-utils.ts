@@ -34,9 +34,11 @@ export function createTestAppEnv(
   overrides: Partial<AppEnvService> = {},
 ): AppEnvService {
   return {
+    NODE_ENV: 'test',
     OIDC_ISSUER: ISSUER,
     OIDC_ACCESS_TOKEN_TTL: 900,
     OIDC_REFRESH_TOKEN_TTL: 604_800,
+    OIDC_INTERACTION_TTL: 3600,
     OIDC_DEFAULT_RESOURCE: TEST_OIDC_RESOURCE,
     OIDC_JWKS_PRIVATE_KEY_PATH: '',
     JWT_USER_ACCESS_SECRET: 'dev-only-change-me-user-access-secret-32chars-min',
@@ -196,6 +198,102 @@ export function createDefaultConsentRepositoryMock(): Pick<
   };
 }
 
+export function createDefaultIdentityRepositoryMock(): Pick<
+  IdentityRepository,
+  'findById' | 'findCredentialByUserId'
+> {
+  return {
+    findById: jest.fn().mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      status: 'active',
+    }),
+    findCredentialByUserId: jest.fn().mockResolvedValue({
+      emailVerified: true,
+    }),
+  };
+}
+
+export const AUTHENTICATED_TEST_USER = {
+  user: {
+    id: 'user-1',
+    email: 'user@example.com',
+    status: 'active' as const,
+  },
+  credential: { emailVerified: true },
+  profile: null,
+  session: { id: 'session-1' },
+};
+
+export function createAuthenticatedSessionBridge(): Pick<
+  OidcUserSessionBridge,
+  'resolveAuthenticatedUser'
+> {
+  return {
+    resolveAuthenticatedUser: jest
+      .fn()
+      .mockResolvedValue(AUTHENTICATED_TEST_USER),
+  };
+}
+
+export function createUnauthenticatedSessionBridge(): Pick<
+  OidcUserSessionBridge,
+  'resolveAuthenticatedUser'
+> {
+  return {
+    resolveAuthenticatedUser: jest.fn().mockResolvedValue(null),
+  };
+}
+
+export function createDeferredAuthSessionBridge(): Pick<
+  OidcUserSessionBridge,
+  'resolveAuthenticatedUser'
+> & {
+  markAuthenticated(): void;
+} {
+  let authenticated = false;
+
+  return {
+    resolveAuthenticatedUser: jest.fn().mockImplementation(async () => {
+      if (!authenticated) {
+        return null;
+      }
+
+      return AUTHENTICATED_TEST_USER;
+    }),
+    markAuthenticated() {
+      authenticated = true;
+    },
+  };
+}
+
+export async function followOidcRedirectsUntil(
+  agent: ReturnType<typeof request>,
+  startRes: request.Response,
+  stopWhen: (location: string) => boolean,
+  maxHops = 8,
+): Promise<{ location: string; res: request.Response }> {
+  let res = startRes;
+
+  for (let hop = 0; hop < maxHops; hop += 1) {
+    const location = res.headers.location;
+    if (!location) {
+      break;
+    }
+
+    if (stopWhen(location)) {
+      return { location, res };
+    }
+
+    res = await agent.get(resolveAuthorizeRedirect(location)).redirects(0);
+    expect([302, 303]).toContain(res.status);
+  }
+
+  throw new Error(
+    `OIDC redirect chain did not complete: last location ${res.headers.location}`,
+  );
+}
+
 type CreateOidcTestServerOptions = {
   appEnv?: AppEnvService;
   registry?: OidcClientRegistry;
@@ -238,24 +336,18 @@ export async function createOidcTestServer(
   const consentRepository =
     options.consentRepository ?? createDefaultConsentRepositoryMock();
   const jwksService = new OidcJwksService(appEnv);
-  const identityRepository = options.identityRepository ?? {
-    findById: jest.fn().mockResolvedValue({
-      id: 'user-1',
-      email: 'user@example.com',
-      status: 'active',
-    }),
-    findCredentialByUserId: jest.fn().mockResolvedValue({
-      emailVerified: true,
-    }),
-  };
+  const identityRepository =
+    options.identityRepository ?? createDefaultIdentityRepositoryMock();
   const accountService = new OidcAccountService(
     identityRepository as IdentityRepository,
   );
+  const hostedErrorService = new OidcHostedErrorService(appEnv);
   const interactionService = new OidcInteractionService(
     appEnv,
     options.sessionBridge as OidcUserSessionBridge,
     oauthClientRepository as OAuthClientRepository,
     consentRepository as OAuthConsentRepository,
+    hostedErrorService,
   );
   const consentGrantService = new OidcConsentGrantService(
     consentRepository as OAuthConsentRepository,
@@ -264,7 +356,6 @@ export async function createOidcTestServer(
   );
   const resourceConfig = new OidcResourceConfigService(appEnv);
   const tokenClaims = new OidcTokenClaimsService(accountService);
-  const hostedErrorService = new OidcHostedErrorService(appEnv);
   const logoutUiService = new OidcLogoutUiService(appEnv);
   const factory = new OidcProviderFactory(
     appEnv,
@@ -277,6 +368,7 @@ export async function createOidcTestServer(
     consentGrantService,
     hostedErrorService,
     logoutUiService,
+    {} as never,
   );
   const provider = await factory.create();
   const oidcHandler = provider.callback();

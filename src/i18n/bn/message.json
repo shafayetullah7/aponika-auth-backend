@@ -15,6 +15,8 @@
     "adminLoginRateLimited": "অতিরিক্ত লগইন প্রচেষ্টা। পরে আবার চেষ্টা করুন",
     "userLoginRateLimited": "অতিরিক্ত লগইন প্রচেষ্টা। পরে আবার চেষ্টা করুন",
     "userRegistrationRateLimited": "অতিরিক্ত নিবন্ধন প্রচেষ্টা। পরে আবার চেষ্টা করুন",
+    "userVerificationResendRateLimited": "অতিরিক্ত যাচাইকরণ ইমেইল অনুরোধ। পরে আবার চেষ্টা করুন",
+    "userVerificationResendCooldown": "যাচাইকরণ ইমেইল প্রতি মিনিটে একবারই অনুরোধ করা যায়। কিছুক্ষণ পর আবার চেষ্টা করুন",
     "passwordResetRateLimited": "অতিরিক্ত পাসওয়ার্ড রিসেট প্রচেষ্টা। পরে আবার চেষ্টা করুন",
     "passwordResetOtpCooldown": "পাসওয়ার্ড রিসেট কোড প্রতি মিনিটে একবারই অনুরোধ করা যায়। কিছুক্ষণ পর আবার চেষ্টা করুন"
   },
@@ -39,6 +41,7 @@
     "adminUserSessionRevoked": "ব্যবহারকারীর সেশন বাতিল করা হয়েছে",
     "adminAuditEventsListed": "অডিট ইভেন্ট তালিকাভুক্ত",
     "userRegistered": "অ্যাকাউন্ট তৈরি হয়েছে। ইমেইল যাচাই করতে আপনার ইমেইল দেখুন",
+    "userVerificationResent": "সেই ইমেইলে যাচাই না করা অ্যাকাউন্ট থাকলে নতুন যাচাইকরণ লিংক পাঠানো হয়েছে",
     "userEmailVerified": "ইমেইল সফলভাবে যাচাই হয়েছে",
     "userLoggedIn": "সফলভাবে লগ ইন হয়েছে",
     "userAuthenticated": "প্রমাণিত",

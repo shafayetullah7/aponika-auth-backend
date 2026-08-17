@@ -15,6 +15,8 @@
     "adminLoginRateLimited": "Too many login attempts. Please try again later",
     "userLoginRateLimited": "Too many login attempts. Please try again later",
     "userRegistrationRateLimited": "Too many registration attempts. Please try again later",
+    "userVerificationResendRateLimited": "Too many verification resend attempts. Please try again later",
+    "userVerificationResendCooldown": "Verification email can only be requested once per minute. Please try again shortly",
     "passwordResetRateLimited": "Too many password reset attempts. Please try again later",
     "passwordResetOtpCooldown": "Password reset code can only be requested once per minute. Please try again shortly"
   },
@@ -39,6 +41,7 @@
     "adminUserSessionRevoked": "User session revoked",
     "adminAuditEventsListed": "Audit events listed",
     "userRegistered": "Account created. Check your email to verify your address",
+    "userVerificationResent": "If an unverified account exists for that email, a new verification link has been sent",
     "userEmailVerified": "Email verified successfully",
     "userLoggedIn": "Logged in successfully",
     "userAuthenticated": "Authenticated",

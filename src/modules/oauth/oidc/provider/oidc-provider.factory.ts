@@ -10,6 +10,7 @@ import { OidcConsentGrantService } from '../consent/oidc-consent-grant.service';
 import { OidcHostedErrorService } from '../login/oidc-hosted-error.service';
 import { OidcLogoutUiService } from '../logout/oidc-logout-ui.service';
 import { OidcTokenClaimsService } from '../token/oidc-token-claims.service';
+import { OidcProviderStorageRepository } from './oidc-provider-storage.repository';
 import { OIDC_PROVIDER_ROUTES } from './oidc-routes.constants';
 import type { OidcProviderEventMap } from './oidc-provider.types';
 
@@ -80,14 +81,28 @@ export class OidcProviderFactory {
     private readonly consentGrantService: OidcConsentGrantService,
     private readonly hostedErrorService: OidcHostedErrorService,
     private readonly logoutUiService: OidcLogoutUiService,
+    private readonly storageRepository: OidcProviderStorageRepository,
   ) {}
+
+  private resolveStorageBackend(): 'memory' | 'postgres' {
+    if (this.appEnv.OIDC_STORAGE_BACKEND) {
+      return this.appEnv.OIDC_STORAGE_BACKEND;
+    }
+
+    return this.appEnv.NODE_ENV === 'test' ? 'memory' : 'postgres';
+  }
 
   async create(): Promise<OidcProviderInstance> {
     const { Provider } = (await import('oidc-provider')) as {
       Provider: OidcProviderConstructor;
     };
 
-    const adapter = await createOidcAdapterFactory(this.clientRegistry);
+    const storageBackend = this.resolveStorageBackend();
+    const adapter = await createOidcAdapterFactory(this.clientRegistry, {
+      storage: storageBackend,
+      storageRepository:
+        storageBackend === 'postgres' ? this.storageRepository : undefined,
+    });
     const jwks = await this.jwksService.loadSigningJwks();
 
     return new Provider(this.appEnv.OIDC_ISSUER, {
@@ -131,6 +146,7 @@ export class OidcProviderFactory {
         IdToken: this.appEnv.OIDC_ACCESS_TOKEN_TTL,
         AuthorizationCode: OIDC_AUTHORIZATION_CODE_TTL_SECONDS,
         RefreshToken: this.appEnv.OIDC_REFRESH_TOKEN_TTL,
+        Interaction: this.appEnv.OIDC_INTERACTION_TTL,
       },
       jwks,
       findAccount: (ctx, id) => this.accountService.findAccount(ctx, id),
