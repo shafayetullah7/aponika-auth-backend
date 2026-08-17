@@ -1,4 +1,4 @@
-import { OidcClientRegistry } from '../../oidc-client.registry';
+import { OidcClientRegistry } from '../../client/oidc-client.registry';
 import {
   buildAuthorizeQuery,
   closeOidcTestServer,
@@ -7,7 +7,7 @@ import {
   resolveAuthorizeRedirect,
   seedByteForgeWebClient,
 } from '../fixtures/oidc-authorize.test-utils';
-import { OIDC_ROUTE_PATHS } from '../../oidc-routes.constants';
+import { OIDC_ROUTE_PATHS } from '../../provider/oidc-routes.constants';
 
 describe('OIDC authorize integration', () => {
   const { challenge } = createPkcePair();

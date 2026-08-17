@@ -2,32 +2,21 @@
 
 NestJS integration for [`oidc-provider`](https://github.com/panva/node-oidc-provider) per [ADR-001](../../../docs/adr/ADR-001-oidc-provider-strategy.md).
 
-## Components
+**How to navigate the code:** [CODE_FLOW.md](./CODE_FLOW.md) — lifecycle diagrams, logical groups, and a debugging guide.
+
+## Entry points
 
 | File | Role |
 |------|------|
-| `oidc-boot.config.ts` | Fail-fast issuer / JWKS path validation at boot |
-| `oidc-jwks.service.ts` | Load RS256 PEM → signing JWKS; public key strip |
-| `oidc-routes.constants.ts` | Protocol paths, global prefix exclusions, path helpers |
-| `oidc-account.service.ts` | `findAccount` + OIDC claims |
-| `oidc-user-session.bridge.ts` | F16 cookie session → OIDC login |
-| `oidc-interaction.service.ts` | `/interaction/:uid` resume + login redirect |
-| `oidc-client.mapper.ts` | `oauth_clients` row → oidc-provider Client payload |
-| `oidc-client.registry.ts` | Read-through cache (60s TTL) |
-| `oidc-client.adapter.ts` | `Client` storage adapter `find()` |
-| `oidc-adapter.factory.ts` | Client adapter + in-memory adapters for other models (dev) |
-| `oidc-provider.factory.ts` | Dynamic ESM import + Provider construction |
-| `oidc-resource.config.ts` | Resource indicators → JWT access tokens (`aud`, RS256) |
-| `oidc-token-claims.service.ts` | `extraTokenClaims` (`email`, `email_verified` on access tokens) |
-| `oidc-token-audit.listener.ts` | `grant.success` → `oidc.token.issued` audit |
-| `oidc-hosted-error.service.ts` | `renderError` → auth frontend `/oauth/error` |
-| `oidc-logout-ui.service.ts` | RP-initiated logout UI (auto-submit confirm) |
-| `oidc-end-session.listener.ts` | `end_session.success` → revoke F16 session + clear cookies |
-| `oidc.service.ts` | Init on module boot; mount Express middleware + interaction route |
+| `oidc.module.ts` | NestJS module — providers, `OidcConsentController`, exports |
+| `oidc.service.ts` | Init on boot; mount Express middleware + `/interaction/:uid` |
+| `src/main.ts` | Global prefix exclusions; calls `mountOnExpress()` |
+
+Exported for other modules: `OidcService`, `OidcClientRegistry`, `OidcJwksService`.
 
 ## HTTP mount
 
-OIDC routes are mounted at the **issuer root** (not under `/api`), e.g.:
+OIDC routes are mounted at the **issuer root** (not under `/api`):
 
 | Endpoint | Path |
 |----------|------|
@@ -36,20 +25,38 @@ OIDC routes are mounted at the **issuer root** (not under `/api`), e.g.:
 | Authorization | `/auth` |
 | Interaction resume | `/interaction/:uid` |
 | Token | `/token` |
+| End session | `/session/end` |
 
-Authorization (F23): unauthenticated users are sent to the auth frontend login; after F16 session cookies are present, `/interaction/:uid` completes login.
+Path constants and prefix exclusions: `provider/oidc-routes.constants.ts`.
 
-Consent (F26): third-party clients redirect to `/consent` on the auth frontend; `trusted_first_party` clients auto-consent. Remembered consent skips the prompt via `loadExistingGrant`.
+## Code map (by flow)
 
-Hosted login (F27): `COOKIE_DOMAIN=localhost` shares F16 cookies across issuer and auth UI ports. Authorize errors that cannot redirect to the client are sent to `{AUTH_FRONTEND_URL}/oauth/error`.
+Files are listed in **runtime order**, not alphabetically. Full detail: [CODE_FLOW.md](./CODE_FLOW.md).
 
-Logout (F28): `GET/POST /session/end` for RP-initiated logout; `post_logout_redirect_uri` must be registered per client. Clears OIDC session and F16 cookies when present.
+### Boot
 
-Token (F24): `POST /token` with `authorization_code` + PKCE issues JWT access token (`aud` = `OIDC_DEFAULT_RESOURCE`), `id_token`, and refresh token. See `scripts/oidc-pkce-token-exchange.sh`.
+| File | Role |
+|------|------|
+| `boot/oidc-boot.config.ts` | Fail-fast issuer / JWKS path validation at boot |
+| `boot/oidc-issuer.validation.ts` | Issuer URL validation |
+| `boot/oidc-jwks.service.ts` | Load RS256 PEM → signing JWKS; public key strip |
 
-Refresh (F25): `POST /token` with `grant_type=refresh_token` rotates refresh tokens; reuse detection revokes the grant family. TTLs: `OIDC_ACCESS_TOKEN_TTL`, `OIDC_REFRESH_TOKEN_TTL`.
+### Provider
 
-## Client resolution
+| File | Role |
+|------|------|
+| `provider/oidc-provider.factory.ts` | Dynamic ESM import + Provider construction |
+| `provider/oidc-provider.types.ts` | Provider event/context types |
+| `provider/oidc-routes.constants.ts` | Protocol paths, global prefix exclusions, path helpers |
+| `provider/oidc-adapter.factory.ts` | Client adapter + in-memory adapters for other models (dev) |
+| `provider/oidc-client.adapter.ts` | `Client` storage adapter `find()` |
+
+### Client resolution
+
+| File | Role |
+|------|------|
+| `client/oidc-client.mapper.ts` | `oauth_clients` row → oidc-provider Client payload |
+| `client/oidc-client.registry.ts` | Read-through cache (60s TTL) |
 
 1. oidc-provider requests client by `client_id`
 2. `OidcClientAdapter.find()` → `OidcClientRegistry`
@@ -57,6 +64,51 @@ Refresh (F25): `POST /token` with `grant_type=refresh_token` rotates refresh tok
 4. `mapOAuthClientToOidcPayload()` — disabled clients return `undefined`
 
 Confidential client secrets are stored hashed in DB; token auth for confidential clients is deferred.
+
+### Login and authorize (F23, F27)
+
+| File | Role |
+|------|------|
+| `login/oidc-interaction.service.ts` | `/interaction/:uid` resume + login redirect |
+| `login/oidc-interaction-request.util.ts` | Interaction request/response helpers |
+| `login/oidc-user-session.bridge.ts` | F16 cookie session → OIDC login |
+| `login/oidc-account.service.ts` | `findAccount` + OIDC claims |
+| `login/oidc-hosted-error.service.ts` | `renderError` → auth frontend `/oauth/error` |
+
+Unauthenticated users are sent to the auth frontend login; after F16 session cookies are present, `/interaction/:uid` completes login.
+
+`COOKIE_DOMAIN=localhost` shares F16 cookies across issuer and auth UI ports. Authorize errors that cannot redirect to the client go to `{AUTH_FRONTEND_URL}/oauth/error`.
+
+### Consent (F26)
+
+| File | Role |
+|------|------|
+| `consent/oidc-consent-grant.service.ts` | Grants, remembered consent, first-party auto-consent |
+| `consent/oidc-consent.controller.ts` | API for auth frontend consent UI |
+
+Third-party clients redirect to `/consent` on the auth frontend; `trusted_first_party` clients auto-consent. Remembered consent skips the prompt via `loadExistingGrant`.
+
+### Token (F24, F25)
+
+| File | Role |
+|------|------|
+| `token/oidc-resource.config.ts` | Resource indicators → JWT access tokens (`aud`, RS256) |
+| `token/oidc-token-claims.service.ts` | `extraTokenClaims` (`email`, `email_verified` on access tokens) |
+| `token/oidc-token-rate-limiter.service.ts` | Rate limit on `POST /token` |
+| `token/oidc-token-audit.listener.ts` | `grant.success` → `oidc.token.issued` audit |
+
+`POST /token` with `authorization_code` + PKCE issues JWT access token (`aud` = `OIDC_DEFAULT_RESOURCE`), `id_token`, and refresh token. See `scripts/oidc-pkce-token-exchange.sh`.
+
+`grant_type=refresh_token` rotates refresh tokens; reuse detection revokes the grant family. TTLs: `OIDC_ACCESS_TOKEN_TTL`, `OIDC_REFRESH_TOKEN_TTL`.
+
+### Logout (F28)
+
+| File | Role |
+|------|------|
+| `logout/oidc-logout-ui.service.ts` | RP-initiated logout UI (auto-submit confirm) |
+| `logout/oidc-end-session.listener.ts` | `end_session.success` → revoke F16 session + clear cookies |
+
+`GET/POST /session/end` for RP-initiated logout; `post_logout_redirect_uri` must be registered per client.
 
 ## Boot requirements
 
@@ -72,26 +124,3 @@ bash scripts/generate-oidc-signing-key.sh
 ```
 
 See [INTEGRATION.md](../../../docs/INTEGRATION.md) §8 for rotation runbook.
-
-## Tests
-
-Production code lives in this folder; tests are grouped under `__tests__/`:
-
-| Path | Contents |
-|------|----------|
-| `__tests__/unit/` | Fast unit specs (mappers, JWKS, boot config, listeners) |
-| `__tests__/integration/` | HTTP-level specs against an in-process OIDC test server |
-| `__tests__/fixtures/` | Shared helpers (`oidc-authorize.test-utils.ts`) |
-
-```bash
-# All OIDC tests
-npm test -- --testPathPatterns=modules/oauth/oidc
-
-# Unit only (fast)
-npm run test:oidc:unit
-
-# Integration only (slower)
-npm run test:oidc:integration
-```
-
-E2E for the full app remains in `test/app.e2e-spec.ts`.

@@ -1,17 +1,17 @@
 import { createServer, type Server } from 'node:http';
 import request from 'supertest';
 import type { IdentityRepository } from '@/modules/identity/identity.repository';
-import { OidcAccountService } from '../../oidc-account.service';
-import { OidcClientRegistry } from '../../oidc-client.registry';
-import { OidcConsentGrantService } from '../../oidc-consent-grant.service';
-import { OidcHostedErrorService } from '../../oidc-hosted-error.service';
-import { OidcInteractionService } from '../../oidc-interaction.service';
-import { OidcLogoutUiService } from '../../oidc-logout-ui.service';
-import { OidcJwksService } from '../../oidc-jwks.service';
-import { OidcProviderFactory } from '../../oidc-provider.factory';
-import { OidcResourceConfigService } from '../../oidc-resource.config';
-import { OidcTokenClaimsService } from '../../oidc-token-claims.service';
-import { OIDC_ROUTE_PATHS } from '../../oidc-routes.constants';
+import { OidcAccountService } from '../../login/oidc-account.service';
+import { OidcClientRegistry } from '../../client/oidc-client.registry';
+import { OidcConsentGrantService } from '../../consent/oidc-consent-grant.service';
+import { OidcHostedErrorService } from '../../login/oidc-hosted-error.service';
+import { OidcInteractionService } from '../../login/oidc-interaction.service';
+import { OidcLogoutUiService } from '../../logout/oidc-logout-ui.service';
+import { OidcJwksService } from '../../boot/oidc-jwks.service';
+import { OidcProviderFactory } from '../../provider/oidc-provider.factory';
+import { OidcResourceConfigService } from '../../token/oidc-resource.config';
+import { OidcTokenClaimsService } from '../../token/oidc-token-claims.service';
+import { OIDC_ROUTE_PATHS } from '../../provider/oidc-routes.constants';
 import {
   createDefaultConsentRepositoryMock,
   createDefaultOAuthClientRepositoryMock,

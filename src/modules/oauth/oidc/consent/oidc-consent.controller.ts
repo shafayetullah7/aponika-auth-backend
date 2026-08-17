@@ -14,8 +14,8 @@ import { CurrentUser } from '@/libs/decorators/current-user.decorator';
 import { UserAuthGuard } from '@/libs/guards/user-auth.guard';
 import { ResponseService } from '@/libs/response/response.service';
 import { AuthenticatedUser } from '@/libs/types/authenticated-user.type';
-import { submitOidcConsentSchema } from '../dto/oauth-consent.schema';
-import { OidcInteractionService } from '@/modules/oauth/oidc/oidc-interaction.service';
+import { submitOidcConsentSchema } from '../../dto/oauth-consent.schema';
+import { OidcInteractionService } from '@/modules/oauth/oidc/login/oidc-interaction.service';
 import { OidcService } from '@/modules/oauth/oidc/oidc.service';
 
 @ApiTags('OAuth Consent')

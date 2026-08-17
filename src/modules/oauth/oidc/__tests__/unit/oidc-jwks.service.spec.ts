@@ -3,11 +3,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { generateKeyPairSync } from 'node:crypto';
 import type { AppEnvService } from '@/libs/config/app-env.service';
-import { OidcBootConfigError } from '../../oidc-issuer.validation';
+import { OidcBootConfigError } from '../../boot/oidc-issuer.validation';
 import {
   OIDC_SIGNING_KID,
   OidcJwksService,
-} from '../../oidc-jwks.service';
+} from '../../boot/oidc-jwks.service';
 
 function createAppEnv(
   overrides: Partial<AppEnvService> = {},

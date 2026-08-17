@@ -1,4 +1,4 @@
-import { OidcClientRegistry } from '../../oidc-client.registry';
+import { OidcClientRegistry } from '../../client/oidc-client.registry';
 import {
   buildAuthorizeQuery,
   closeOidcTestServer,
@@ -9,7 +9,7 @@ import {
   POST_LOGOUT_URI,
   seedByteForgeWebClient,
 } from '../fixtures/oidc-authorize.test-utils';
-import { OIDC_ROUTE_PATHS } from '../../oidc-routes.constants';
+import { OIDC_ROUTE_PATHS } from '../../provider/oidc-routes.constants';
 
 describe('OIDC end_session integration', () => {
   const { challenge, verifier } = createPkcePair();

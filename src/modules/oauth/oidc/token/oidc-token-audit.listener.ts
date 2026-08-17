@@ -3,11 +3,11 @@ import { AuditActionEnum } from '@/_db/drizzle/enum/audit-action.enum';
 import { AuditActorTypeEnum } from '@/_db/drizzle/enum/audit-actor-type.enum';
 import { AuditService } from '@/modules/audit/audit.service';
 import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
-import type { OidcProviderInstance } from './oidc-provider.factory';
+import type { OidcProviderInstance } from '../provider/oidc-provider.factory';
 import {
   type OidcGrantSuccessContext,
   isOidcGrantSuccessContext,
-} from './oidc-provider.types';
+} from '../provider/oidc-provider.types';
 
 @Injectable()
 export class OidcTokenAuditListener {

@@ -1,4 +1,4 @@
-import { OidcHostedErrorService } from '../../oidc-hosted-error.service';
+import { OidcHostedErrorService } from '../../login/oidc-hosted-error.service';
 
 describe('OidcHostedErrorService', () => {
   const appEnv = {

@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { AppEnvService } from '@/libs/config/app-env.service';
-import { OidcAccountService } from './oidc-account.service';
-import { OidcClientRegistry } from './oidc-client.registry';
+import { OidcAccountService } from '../login/oidc-account.service';
+import { OidcClientRegistry } from '../client/oidc-client.registry';
 import { createOidcAdapterFactory } from './oidc-adapter.factory';
-import { OidcInteractionService } from './oidc-interaction.service';
-import { OidcJwksService } from './oidc-jwks.service';
-import { OidcResourceConfigService } from './oidc-resource.config';
-import { OidcConsentGrantService } from './oidc-consent-grant.service';
-import { OidcHostedErrorService } from './oidc-hosted-error.service';
-import { OidcLogoutUiService } from './oidc-logout-ui.service';
-import { OidcTokenClaimsService } from './oidc-token-claims.service';
+import { OidcInteractionService } from '../login/oidc-interaction.service';
+import { OidcJwksService } from '../boot/oidc-jwks.service';
+import { OidcResourceConfigService } from '../token/oidc-resource.config';
+import { OidcConsentGrantService } from '../consent/oidc-consent-grant.service';
+import { OidcHostedErrorService } from '../login/oidc-hosted-error.service';
+import { OidcLogoutUiService } from '../logout/oidc-logout-ui.service';
+import { OidcTokenClaimsService } from '../token/oidc-token-claims.service';
 import { OIDC_PROVIDER_ROUTES } from './oidc-routes.constants';
 import type { OidcProviderEventMap } from './oidc-provider.types';
 

@@ -1,9 +1,9 @@
 import { AppEnvService } from '@/libs/config/app-env.service';
 import { OAuthConsentRepository } from '@/modules/oauth/oauth-consent.repository';
 import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
-import { OidcInteractionService } from '../../oidc-interaction.service';
-import { OidcUserSessionBridge } from '../../oidc-user-session.bridge';
-import { createInteractionRequest } from '../../oidc-interaction-request.util';
+import { OidcInteractionService } from '../../login/oidc-interaction.service';
+import { OidcUserSessionBridge } from '../../login/oidc-user-session.bridge';
+import { createInteractionRequest } from '../../login/oidc-interaction-request.util';
 
 describe('OidcInteractionService denyConsent', () => {
   it('finishes the interaction with access_denied using the interaction uid', async () => {

@@ -12,8 +12,8 @@ import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
 import {
   buildOidcIssuerUrl,
   OIDC_INTERACTION_PATH_PREFIX,
-} from './oidc-routes.constants';
-import type { OidcProviderInstance, OidcStoredInteraction } from './oidc-provider.factory';
+} from '../provider/oidc-routes.constants';
+import type { OidcProviderInstance, OidcStoredInteraction } from '../provider/oidc-provider.factory';
 import { createCapturingInteractionResponse } from './oidc-interaction-request.util';
 import { OidcUserSessionBridge } from './oidc-user-session.bridge';
 

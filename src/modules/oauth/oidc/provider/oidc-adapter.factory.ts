@@ -1,5 +1,5 @@
 import { OidcClientAdapter } from './oidc-client.adapter';
-import { OidcClientRegistry } from './oidc-client.registry';
+import { OidcClientRegistry } from '../client/oidc-client.registry';
 
 type MemoryAdapterModule = {
   default: new (name: string) => OidcStorageAdapter;

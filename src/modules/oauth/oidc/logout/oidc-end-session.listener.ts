@@ -2,9 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { CookieService } from '@/libs/cookie/cookie.service';
 import { UserAuthService } from '@/modules/user-auth/user-auth.service';
-import type { OidcProviderInstance } from './oidc-provider.factory';
-import { isOidcEndSessionSuccessContext } from './oidc-provider.types';
-import { OidcUserSessionBridge } from './oidc-user-session.bridge';
+import type { OidcProviderInstance } from '../provider/oidc-provider.factory';
+import { isOidcEndSessionSuccessContext } from '../provider/oidc-provider.types';
+import { OidcUserSessionBridge } from '../login/oidc-user-session.bridge';
 
 @Injectable()
 export class OidcEndSessionListener {

@@ -3,7 +3,7 @@ import {
   OAuthClientTypeEnum,
   OAuthClientUriKindEnum,
 } from '@/_db/drizzle/enum';
-import { mapOAuthClientToOidcPayload } from '../../oidc-client.mapper';
+import { mapOAuthClientToOidcPayload } from '../../client/oidc-client.mapper';
 
 describe('mapOAuthClientToOidcPayload', () => {
   const baseClient = {

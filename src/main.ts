@@ -8,7 +8,7 @@ import { AppEnvService } from './libs/config/app-env.service';
 import { CorsOriginsService } from './libs/security/cors-origins.service';
 import { applySecurityHeaders } from './libs/security/security-headers.middleware';
 import { OidcService } from './modules/oauth/oidc/oidc.service';
-import { OIDC_GLOBAL_PREFIX_EXCLUSIONS } from './modules/oauth/oidc/oidc-routes.constants';
+import { OIDC_GLOBAL_PREFIX_EXCLUSIONS } from './modules/oauth/oidc/provider/oidc-routes.constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {

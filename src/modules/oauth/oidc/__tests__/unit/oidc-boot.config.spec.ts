@@ -1,4 +1,4 @@
-import { assertValidOidcIssuer, OidcBootConfigError } from '../../oidc-issuer.validation';
+import { assertValidOidcIssuer, OidcBootConfigError } from '../../boot/oidc-issuer.validation';
 
 describe('assertValidOidcIssuer', () => {
   it('accepts a valid issuer URL', () => {

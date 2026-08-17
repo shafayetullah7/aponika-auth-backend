@@ -5,20 +5,20 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Application, NextFunction, Request, Response } from 'express';
-import { OidcBootConfigService } from './oidc-boot.config';
-import { OidcEndSessionListener } from './oidc-end-session.listener';
-import { OidcInteractionService } from './oidc-interaction.service';
+import { OidcBootConfigService } from './boot/oidc-boot.config';
+import { OidcEndSessionListener } from './logout/oidc-end-session.listener';
+import { OidcInteractionService } from './login/oidc-interaction.service';
 import {
   OidcProviderFactory,
   OidcProviderInstance,
-} from './oidc-provider.factory';
-import { OidcTokenRateLimiterService } from './oidc-token-rate-limiter.service';
-import { OidcTokenAuditListener } from './oidc-token-audit.listener';
+} from './provider/oidc-provider.factory';
+import { OidcTokenRateLimiterService } from './token/oidc-token-rate-limiter.service';
+import { OidcTokenAuditListener } from './token/oidc-token-audit.listener';
 import {
   isOidcHttpPath,
   OIDC_INTERACTION_PATH_PREFIX,
   OIDC_ROUTE_PATHS,
-} from './oidc-routes.constants';
+} from './provider/oidc-routes.constants';
 import { getClientIp } from '@/libs/utils/get-client-ip';
 import { CustomException } from '@/libs/exceptions/custom.exception';
 

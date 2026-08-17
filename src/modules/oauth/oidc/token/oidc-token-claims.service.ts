@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OidcAccountService } from './oidc-account.service';
+import { OidcAccountService } from '../login/oidc-account.service';
 
 type OidcTokenLike = {
   kind?: string;

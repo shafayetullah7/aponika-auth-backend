@@ -1,4 +1,4 @@
-import { OidcClientRegistry } from './oidc-client.registry';
+import { OidcClientRegistry } from '../client/oidc-client.registry';
 
 export class OidcClientAdapter {
   constructor(private readonly registry: OidcClientRegistry) {}
