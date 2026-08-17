@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AuditActionEnum } from '@/_db/drizzle/enum/audit-action.enum';
 import { AuditActorTypeEnum } from '@/_db/drizzle/enum/audit-actor-type.enum';
 import { AuditService } from '@/modules/audit/audit.service';
+import { OAuthClientRepository } from '@/modules/oauth/oauth-client.repository';
 import type { OidcProviderInstance } from './oidc-provider.factory';
 import {
   type OidcGrantSuccessContext,
@@ -10,7 +11,12 @@ import {
 
 @Injectable()
 export class OidcTokenAuditListener {
-  constructor(private readonly auditService: AuditService) {}
+  private readonly logger = new Logger(OidcTokenAuditListener.name);
+
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly oauthClientRepository: OAuthClientRepository,
+  ) {}
 
   attach(provider: OidcProviderInstance): void {
     provider.on('grant.success', (ctx) => {
@@ -18,7 +24,10 @@ export class OidcTokenAuditListener {
         return;
       }
 
-      void this.handleGrantSuccess(ctx);
+      void this.handleGrantSuccess(ctx).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Failed to record OIDC token audit event: ${message}`);
+      });
     });
   }
 
@@ -34,13 +43,22 @@ export class OidcTokenAuditListener {
       return;
     }
 
+    const client = await this.oauthClientRepository.findByClientId(clientId);
+    if (!client) {
+      this.logger.warn(
+        `Skipping OIDC token audit: OAuth client "${clientId}" is not registered`,
+      );
+      return;
+    }
+
     await this.auditService.record({
       actorType: AuditActorTypeEnum.USER,
       actorId: accountId,
       action: AuditActionEnum.OIDC_TOKEN_ISSUED,
       resourceType: 'oauth_client',
-      resourceId: clientId,
+      resourceId: client.id,
       metadata: {
+        clientId,
         grantType,
       },
       ip: ctx.ip ?? null,

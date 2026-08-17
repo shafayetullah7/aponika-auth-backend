@@ -29,9 +29,12 @@ export const DEV_OAUTH_CLIENTS: DevOAuthClientSeed[] = [
     description: 'Byte Forge marketplace web app',
     clientType: OAuthClientTypeEnum.PUBLIC,
     trustedFirstParty: true,
-    redirectUris: ['http://localhost:3000/auth/callback'],
+    redirectUris: [
+      'http://localhost:3005/api/v1/user/auth/oidc/callback',
+      'http://localhost:3000/auth/callback',
+    ],
     postLogoutRedirectUris: ['http://localhost:3000/'],
-    allowedOrigins: ['http://localhost:3000'],
+    allowedOrigins: ['http://localhost:3000', 'http://localhost:3005'],
   },
   {
     clientId: 'byte-forge-admin',

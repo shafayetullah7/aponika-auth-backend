@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import {
   oauthClientRedirectUrisTable,
   oauthClientsTable,
@@ -10,6 +10,41 @@ import {
   DEV_OAUTH_CLIENT_DEFAULTS,
   toUriRows,
 } from './dev-oauth-clients.data';
+
+async function syncRedirectUris(
+  oauthClientId: string,
+  definition: (typeof DEV_OAUTH_CLIENTS)[number],
+): Promise<void> {
+  const uriBundle = validateUriBundle({
+    redirectUris: definition.redirectUris,
+    postLogoutRedirectUris: definition.postLogoutRedirectUris,
+    allowedOrigins: definition.allowedOrigins,
+  });
+  const uriRows = toUriRows(uriBundle);
+
+  for (const row of uriRows) {
+    const [existingUri] = await seedDb
+      .select({ id: oauthClientRedirectUrisTable.id })
+      .from(oauthClientRedirectUrisTable)
+      .where(
+        and(
+          eq(oauthClientRedirectUrisTable.oauthClientId, oauthClientId),
+          eq(oauthClientRedirectUrisTable.kind, row.kind),
+          eq(oauthClientRedirectUrisTable.uri, row.uri),
+        ),
+      )
+      .limit(1);
+
+    if (!existingUri) {
+      await seedDb.insert(oauthClientRedirectUrisTable).values({
+        oauthClientId,
+        uri: row.uri,
+        kind: row.kind,
+      });
+      console.log(`➕ Added ${row.kind} URI for ${definition.clientId}: ${row.uri}`);
+    }
+  }
+}
 
 export async function seedOAuthClients(): Promise<void> {
   console.log('🌱 Seeding OAuth clients for local dev...');
@@ -28,7 +63,8 @@ export async function seedOAuthClients(): Promise<void> {
           trustedFirstParty: definition.trustedFirstParty ?? false,
         })
         .where(eq(oauthClientsTable.clientId, definition.clientId));
-      console.log(`🔄 Synced ${definition.clientId} trusted_first_party flag`);
+      await syncRedirectUris(existing.id, definition);
+      console.log(`🔄 Synced ${definition.clientId} trusted_first_party + URIs`);
       continue;
     }
 

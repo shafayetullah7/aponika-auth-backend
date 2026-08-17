@@ -15,6 +15,30 @@ import type { OidcProviderEventMap } from './oidc-provider.types';
 
 export const OIDC_AUTHORIZATION_CODE_TTL_SECONDS = 120;
 
+export type OidcStoredInteraction = {
+  prompt: {
+    name: string;
+    details?: {
+      missingOIDCScope?: string[];
+      missingOIDCClaims?: string[];
+      missingResourceScopes?: Record<string, string[]>;
+    };
+  };
+  params: {
+    client_id: string;
+    scope?: string;
+    redirect_uri?: string;
+    state?: string;
+  };
+  session?: { accountId?: string };
+  grantId?: string;
+  returnTo: string;
+  exp: number;
+  lastSubmission?: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  save: (ttl: number) => Promise<void>;
+};
+
 export type OidcProviderInstance = {
   issuer: string;
   callback: () => (req: unknown, res: unknown, next?: () => void) => void;
@@ -25,6 +49,9 @@ export type OidcProviderInstance = {
     result: unknown,
     options?: { mergeWithLastSubmission?: boolean },
   ) => Promise<void>;
+  Interaction: {
+    find: (id: string) => Promise<OidcStoredInteraction | undefined>;
+  };
   Grant: {
     find: (id: string) => Promise<unknown>;
     new (payload: { accountId: string; clientId: string }): unknown;

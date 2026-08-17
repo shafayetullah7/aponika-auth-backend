@@ -13,7 +13,7 @@ import {
   buildOidcIssuerUrl,
   OIDC_INTERACTION_PATH_PREFIX,
 } from './oidc-routes.constants';
-import type { OidcProviderInstance } from './oidc-provider.factory';
+import type { OidcProviderInstance, OidcStoredInteraction } from './oidc-provider.factory';
 import { createCapturingInteractionResponse } from './oidc-interaction-request.util';
 import { OidcUserSessionBridge } from './oidc-user-session.bridge';
 
@@ -54,6 +54,7 @@ export type OidcConsentPromptDetails = {
   clientName: string;
   clientDescription: string | null;
   scopes: string[];
+  autoRedirectUrl?: string;
 };
 
 @Injectable()
@@ -130,6 +131,7 @@ export class OidcInteractionService {
         details.params.client_id,
       );
       if (client?.trustedFirstParty) {
+        // Cookie is present on GET /interaction/:uid — finish in-process (303).
         await this.finishConsentInteraction(req, res, provider, details, {
           remember: false,
         });
@@ -182,6 +184,29 @@ export class OidcInteractionService {
 
     const scopes = this.resolveRequestedScopes(details);
 
+    if (client.trustedFirstParty) {
+      const redirectUrl = await this.finishConsentInteraction(
+        req,
+        createCapturingInteractionResponse().res,
+        provider,
+        details,
+        { remember: false, interactionUid: uid },
+      );
+
+      if (!redirectUrl) {
+        throw new BadRequestException('Consent could not be completed');
+      }
+
+      return {
+        interactionUid: uid,
+        clientId: client.clientId,
+        clientName: client.name,
+        clientDescription: client.description,
+        scopes,
+        autoRedirectUrl: redirectUrl,
+      };
+    }
+
     return {
       interactionUid: uid,
       clientId: client.clientId,
@@ -201,16 +226,14 @@ export class OidcInteractionService {
     const details = await this.readInteractionDetails(req, provider, uid);
     this.assertConsentPromptForUser(details, userId);
 
-    const capture = createCapturingInteractionResponse();
-    await this.finishConsentInteraction(
+    const redirectUrl = await this.finishConsentInteraction(
       req,
-      capture.res,
+      createCapturingInteractionResponse().res,
       provider,
       details,
-      { remember },
+      { remember, interactionUid: uid },
     );
 
-    const redirectUrl = capture.getRedirectUrl();
     if (!redirectUrl) {
       throw new BadRequestException('Consent could not be completed');
     }
@@ -227,22 +250,15 @@ export class OidcInteractionService {
     const details = await this.readInteractionDetails(req, provider, uid);
     this.assertConsentPromptForUser(details, userId);
 
-    const capture = createCapturingInteractionResponse();
-
-    await provider.interactionFinished(
-      req,
-      capture.res,
+    const redirectUrl = await this.completeInteractionResult(
+      provider,
+      uid,
       {
         error: 'access_denied',
         error_description: 'User denied consent',
       },
-      { mergeWithLastSubmission: true },
+      true,
     );
-
-    const redirectUrl = capture.getRedirectUrl();
-    if (!redirectUrl) {
-      throw new BadRequestException('Consent denial could not be completed');
-    }
 
     return { redirectUrl };
   }
@@ -252,10 +268,22 @@ export class OidcInteractionService {
     res: Response,
     provider: OidcProviderInstance,
     details: OidcInteractionDetails,
-    options: { remember: boolean },
-  ): Promise<void> {
+    options: { remember: boolean; interactionUid?: string },
+  ): Promise<string | void> {
     const accountId = details.session?.accountId;
     if (!accountId) {
+      if (options.interactionUid) {
+        return this.completeInteractionResult(
+          provider,
+          options.interactionUid,
+          {
+            error: 'access_denied',
+            error_description: 'Login required',
+          },
+          false,
+        );
+      }
+
       await provider.interactionFinished(
         req,
         res,
@@ -320,12 +348,20 @@ export class OidcInteractionService {
       }
     }
 
-    await provider.interactionFinished(
-      req,
-      res,
-      { consent: { grantId } },
-      { mergeWithLastSubmission: true },
-    );
+    const consentResult = { consent: { grantId } };
+
+    if (options.interactionUid) {
+      return this.completeInteractionResult(
+        provider,
+        options.interactionUid,
+        consentResult,
+        true,
+      );
+    }
+
+    await provider.interactionFinished(req, res, consentResult, {
+      mergeWithLastSubmission: true,
+    });
   }
 
   private async readInteractionDetails(
@@ -334,6 +370,15 @@ export class OidcInteractionService {
     uid?: string,
     res?: Response,
   ): Promise<OidcInteractionDetails> {
+    if (uid) {
+      try {
+        const interaction = await this.findInteractionByUid(provider, uid);
+        return this.mapStoredInteraction(interaction);
+      } catch (error) {
+        throw this.toConsentInteractionError(error, uid);
+      }
+    }
+
     const interactionRes = res ?? createCapturingInteractionResponse().res;
 
     try {
@@ -346,15 +391,69 @@ export class OidcInteractionService {
     }
   }
 
+  private async findInteractionByUid(
+    provider: OidcProviderInstance,
+    uid: string,
+  ): Promise<OidcStoredInteraction> {
+    const interaction = await provider.Interaction.find(uid);
+    if (!interaction) {
+      throw new BadRequestException(
+        'OIDC interaction session is missing or expired. Start sign-in again from the application.',
+      );
+    }
+
+    return interaction;
+  }
+
+  private mapStoredInteraction(
+    interaction: OidcStoredInteraction,
+  ): OidcInteractionDetails {
+    return {
+      prompt: interaction.prompt,
+      params: interaction.params,
+      grantId: interaction.grantId,
+      session: interaction.session,
+    };
+  }
+
+  private async completeInteractionResult(
+    provider: OidcProviderInstance,
+    uid: string,
+    result: Record<string, unknown>,
+    mergeWithLastSubmission: boolean,
+  ): Promise<string> {
+    const interaction = await this.findInteractionByUid(provider, uid);
+
+    if (mergeWithLastSubmission && !('error' in result)) {
+      interaction.result = {
+        ...interaction.lastSubmission,
+        ...result,
+      };
+    } else {
+      interaction.result = result;
+    }
+
+    const ttlSeconds = Math.max(0, interaction.exp - Math.floor(Date.now() / 1000));
+    await interaction.save(ttlSeconds);
+
+    return interaction.returnTo;
+  }
+
   private toConsentInteractionError(error: unknown, uid?: string): never {
     const message = error instanceof Error ? error.message : String(error);
     const errorName =
       error instanceof Error && 'name' in error
         ? String(error.name)
         : undefined;
+    const errorDescription =
+      error instanceof Error && 'error_description' in error
+        ? String(
+            (error as Error & { error_description?: string }).error_description,
+          )
+        : undefined;
 
     this.logger.warn(
-      `Failed to read OIDC interaction details${uid ? ` for ${uid}` : ''}: ${message}`,
+      `Failed to read OIDC interaction details${uid ? ` for ${uid}` : ''}: ${errorDescription ?? message}`,
     );
 
     if (
