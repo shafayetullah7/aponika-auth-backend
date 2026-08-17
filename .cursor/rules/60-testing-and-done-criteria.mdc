@@ -13,3 +13,33 @@ A backend change is complete only when:
 - Relevant tests are executed for changed behavior
 - i18n updates are present in both locales when needed
 - API contract remains stable unless change is explicitly planned
+
+## Test file layout
+
+Keep production code and tests separate within each folder:
+
+```
+src/modules/{domain}/
+  *.service.ts              # production only
+  __tests__/
+    unit/                   # *.spec.ts (fast, mocked)
+    integration/            # *.integration.spec.ts (HTTP / in-process server)
+    fixtures/               # shared *.test-utils.ts
+```
+
+- Place `__tests__/` in the **same directory** as the code under test (module folder, `application/commands/`, `libs/mail/`, etc.).
+- Do **not** colocate `*.spec.ts` next to production files.
+- E2E stays in `test/` (package root), not under `src/`.
+- Import production code from tests with `../../` (or deeper) relative paths, or `@/` aliases.
+
+## Running tests (gradual)
+
+Prefer scoped runs while developing; avoid full `npm test` unless validating a release:
+
+```bash
+pnpm test:unit --testPathPatterns=modules/platform-admin/__tests__   # one area
+pnpm test:oidc:unit                                                  # OIDC unit only
+pnpm test:oidc:integration                                           # OIDC integration (slower)
+```
+
+Use `--runInBand` when the machine is under load. Multiple `--testPathPatterns` are OR — use one specific path to narrow.

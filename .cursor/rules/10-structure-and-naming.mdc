@@ -33,3 +33,7 @@ alwaysApply: false
 ## Reuse
 
 Reuse existing helpers in `src/libs/` before creating duplicates.
+
+## Tests
+
+Colocate tests under `__tests__/unit|integration|fixtures` in the same folder as the code under test — not beside production files. See `60-testing-and-done-criteria.mdc`.

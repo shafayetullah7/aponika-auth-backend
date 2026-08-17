@@ -72,3 +72,26 @@ bash scripts/generate-oidc-signing-key.sh
 ```
 
 See [INTEGRATION.md](../../../docs/INTEGRATION.md) §8 for rotation runbook.
+
+## Tests
+
+Production code lives in this folder; tests are grouped under `__tests__/`:
+
+| Path | Contents |
+|------|----------|
+| `__tests__/unit/` | Fast unit specs (mappers, JWKS, boot config, listeners) |
+| `__tests__/integration/` | HTTP-level specs against an in-process OIDC test server |
+| `__tests__/fixtures/` | Shared helpers (`oidc-authorize.test-utils.ts`) |
+
+```bash
+# All OIDC tests
+npm test -- --testPathPatterns=modules/oauth/oidc
+
+# Unit only (fast)
+npm run test:oidc:unit
+
+# Integration only (slower)
+npm run test:oidc:integration
+```
+
+E2E for the full app remains in `test/app.e2e-spec.ts`.

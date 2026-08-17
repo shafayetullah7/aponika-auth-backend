@@ -25,6 +25,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:unit": "jest --runInBand --testPathPatterns=__tests__/unit",
+    "test:integration": "jest --runInBand --testPathPatterns=__tests__/integration",
+    "test:oidc:unit": "jest --runInBand --testPathPatterns=modules/oauth/oidc/__tests__/unit",
+    "test:oidc:integration": "jest --runInBand --testPathPatterns=modules/oauth/oidc/__tests__/integration",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "db:seed": "node -r tsconfig-paths/register -r ts-node/register src/_db/seeds/main.ts",
@@ -107,7 +111,8 @@
     },
     "transformIgnorePatterns": [],
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/__tests__/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
