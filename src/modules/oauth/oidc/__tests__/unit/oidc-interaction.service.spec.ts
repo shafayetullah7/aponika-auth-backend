@@ -2,7 +2,7 @@ import { AppEnvService } from '@/libs/config/app-env.service';
 import { OAuthConsentRepository } from '@/modules/oauth/repositories/oauth-consent.repository';
 import { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
 import { OidcHostedErrorService } from '../../login/oidc-hosted-error.service';
-import { OidcInteractionService } from '../../login/oidc-interaction.service';
+import { OidcInteractionService, buildRpAbortRedirectUrl } from '../../login/oidc-interaction.service';
 import { OidcUserSessionBridge } from '../../login/oidc-user-session.bridge';
 import { createInteractionRequest, createCapturingInteractionResponse } from '../../login/oidc-interaction-request.util';
 
@@ -143,5 +143,28 @@ describe('OidcInteractionService resume', () => {
     expect(redirectUrl.searchParams.get('error_description')).toContain(
       'Missing OIDC interaction id',
     );
+  });
+});
+
+describe('buildRpAbortRedirectUrl', () => {
+  it('adds login_required and state on the registered redirect_uri', () => {
+    const url = buildRpAbortRedirectUrl({
+      redirect_uri: 'http://localhost:3005/api/v1/user/auth/oidc/callback',
+      state: 'pkce-state',
+    });
+
+    expect(url).toBeDefined();
+    const parsed = new URL(url!);
+    expect(parsed.origin + parsed.pathname).toBe(
+      'http://localhost:3005/api/v1/user/auth/oidc/callback',
+    );
+    expect(parsed.searchParams.get('error')).toBe('login_required');
+    expect(parsed.searchParams.get('state')).toBe('pkce-state');
+  });
+
+  it('returns undefined for non-http URIs', () => {
+    expect(
+      buildRpAbortRedirectUrl({ redirect_uri: 'javascript:alert(1)' }),
+    ).toBeUndefined();
   });
 });

@@ -57,7 +57,41 @@ export type OidcConsentPromptDetails = {
   clientDescription: string | null;
   scopes: string[];
   autoRedirectUrl?: string;
+  /** Registered RP callback with error=login_required — use location.replace on abort. */
+  abortRedirectUrl?: string;
 };
+
+export function buildRpAbortRedirectUrl(params: {
+  redirect_uri?: string;
+  state?: string;
+}): string | undefined {
+  const redirectUri = params.redirect_uri?.trim();
+  if (!redirectUri) {
+    return undefined;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(redirectUri);
+  } catch {
+    return undefined;
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return undefined;
+  }
+
+  url.searchParams.set('error', 'login_required');
+  url.searchParams.set(
+    'error_description',
+    'The sign-in request expired or could not be completed',
+  );
+  if (params.state?.trim()) {
+    url.searchParams.set('state', params.state.trim());
+  }
+
+  return url.toString();
+}
 
 @Injectable()
 export class OidcInteractionService {
@@ -201,6 +235,8 @@ export class OidcInteractionService {
 
     const scopes = this.resolveRequestedScopes(details);
 
+    const abortRedirectUrl = buildRpAbortRedirectUrl(details.params);
+
     if (client.trustedFirstParty) {
       const redirectUrl = await this.finishConsentInteraction(
         req,
@@ -221,6 +257,7 @@ export class OidcInteractionService {
         clientDescription: client.description,
         scopes,
         autoRedirectUrl: redirectUrl,
+        abortRedirectUrl,
       };
     }
 
@@ -230,6 +267,7 @@ export class OidcInteractionService {
       clientName: client.name,
       clientDescription: client.description,
       scopes,
+      abortRedirectUrl,
     };
   }
 
