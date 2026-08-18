@@ -108,7 +108,7 @@ Third-party clients redirect to `/consent` on the auth frontend; `trusted_first_
 | File | Role |
 |------|------|
 | `logout/oidc-logout-ui.service.ts` | RP-initiated logout UI (auto-submit confirm) |
-| `logout/oidc-end-session.listener.ts` | `end_session.success` → revoke F16 session + clear cookies |
+| `logout/oidc-end-session.listener.ts` | `end_session.success` → clear hosted cookies; `state=all.*` revokes every F16 session, otherwise this hosted session only |
 
 `GET/POST /session/end` for RP-initiated logout; `post_logout_redirect_uri` must be registered per client.
 

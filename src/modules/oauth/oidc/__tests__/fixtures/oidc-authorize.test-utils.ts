@@ -313,14 +313,15 @@ type CreateOidcTestServerOptions = {
   oauthClientRepository?: Pick<OAuthClientRepository, 'findByClientId'>;
   consentRepository?: Pick<OAuthConsentRepository, 'findRemembered' | 'upsert'>;
   endSession?: {
-    userAuthService?: Pick<UserAuthService, 'logoutAllActiveSessions'>;
+    userAuthService?: Pick<UserAuthService, 'logoutAllActiveSessions' | 'logout'>;
     cookieService?: CookieService;
   };
 };
 
 export type OidcEndSessionTestDeps = {
-  userAuthService: Pick<UserAuthService, 'logoutAllActiveSessions'> & {
+  userAuthService: Pick<UserAuthService, 'logoutAllActiveSessions' | 'logout'> & {
     logoutAllActiveSessions: jest.Mock;
+    logout: jest.Mock;
   };
   cookieService: CookieService;
   endSessionListener: OidcEndSessionListener;
@@ -398,6 +399,9 @@ export async function createOidcTestServer(
     const userAuthService = {
       logoutAllActiveSessions:
         options.endSession.userAuthService?.logoutAllActiveSessions ??
+        jest.fn().mockResolvedValue(undefined),
+      logout:
+        options.endSession.userAuthService?.logout ??
         jest.fn().mockResolvedValue(undefined),
     };
     const cookieService =

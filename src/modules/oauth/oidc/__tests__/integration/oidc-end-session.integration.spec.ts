@@ -66,6 +66,7 @@ describe('OIDC end_session integration', () => {
       const { setCookie } = await completeRpInitiatedLogout(agent, {
         id_token_hint: tokens.id_token,
         post_logout_redirect_uri: POST_LOGOUT_URI,
+        state: 'browser.logout-state',
       });
 
       expect(setCookie).toEqual(
@@ -76,8 +77,9 @@ describe('OIDC end_session integration', () => {
     }
   });
 
-  it('revokes hosted sessions and clears cookies via end_session listener', async () => {
+  it('revokes all hosted sessions when end_session state has all. prefix', async () => {
     const logoutAllActiveSessions = jest.fn().mockResolvedValue(undefined);
+    const logout = jest.fn().mockResolvedValue(undefined);
     const cookieService = createNodeCompatibleCookieService();
     const registry = new OidcClientRegistry({} as never);
     seedByteForgeWebClient(registry);
@@ -86,7 +88,7 @@ describe('OIDC end_session integration', () => {
       sessionBridge: createAuthenticatedSessionBridge(),
       registry,
       endSession: {
-        userAuthService: { logoutAllActiveSessions },
+        userAuthService: { logoutAllActiveSessions, logout },
         cookieService,
       },
     });
@@ -96,6 +98,7 @@ describe('OIDC end_session integration', () => {
       const { setCookie } = await completeRpInitiatedLogout(agent, {
         id_token_hint: tokens.id_token,
         post_logout_redirect_uri: POST_LOGOUT_URI,
+        state: 'all.logout-state',
       });
 
       await new Promise<void>((resolve) => {
@@ -107,6 +110,7 @@ describe('OIDC end_session integration', () => {
         AUTHENTICATED_TEST_USER.user.id,
         expect.any(String),
       );
+      expect(logout).not.toHaveBeenCalled();
       expect(cookieService.clearUserTokens).toHaveBeenCalled();
 
       expect(setCookie).toEqual(
@@ -116,6 +120,41 @@ describe('OIDC end_session integration', () => {
           expect.stringMatching(/^user-xsrf-token=;/),
         ]),
       );
+    } finally {
+      await closeOidcTestServer(server);
+    }
+  });
+
+  it('does not revoke all hosted sessions for this-browser end_session state', async () => {
+    const logoutAllActiveSessions = jest.fn().mockResolvedValue(undefined);
+    const logout = jest.fn().mockResolvedValue(undefined);
+    const cookieService = createNodeCompatibleCookieService();
+    const registry = new OidcClientRegistry({} as never);
+    seedByteForgeWebClient(registry);
+
+    const { server, agent } = await createOidcTestServer({
+      sessionBridge: createAuthenticatedSessionBridge(),
+      registry,
+      endSession: {
+        userAuthService: { logoutAllActiveSessions, logout },
+        cookieService,
+      },
+    });
+
+    try {
+      const tokens = await obtainOidcTokens(agent, challenge, verifier);
+      await completeRpInitiatedLogout(agent, {
+        id_token_hint: tokens.id_token,
+        post_logout_redirect_uri: POST_LOGOUT_URI,
+        state: 'browser.logout-state',
+      });
+
+      await new Promise<void>((resolve) => {
+        setImmediate(resolve);
+      });
+
+      expect(logoutAllActiveSessions).not.toHaveBeenCalled();
+      expect(logout).not.toHaveBeenCalled();
     } finally {
       await closeOidcTestServer(server);
     }

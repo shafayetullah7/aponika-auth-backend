@@ -2,7 +2,10 @@ import { JwtService } from '@nestjs/jwt';
 import { CookieService } from '@/libs/cookie/cookie.service';
 import { UserAuthService } from '@/modules/user-auth/user-auth.service';
 import { OidcEndSessionListener } from '../../logout/oidc-end-session.listener';
-import { readEndSessionAccountId } from '../../provider/oidc-provider.types';
+import {
+  readEndSessionAccountId,
+  readEndSessionLogoutState,
+} from '../../provider/oidc-provider.types';
 
 describe('readEndSessionAccountId', () => {
   it('reads accountId from oidc session', () => {
@@ -39,9 +42,39 @@ describe('readEndSessionAccountId', () => {
   });
 });
 
+describe('readEndSessionLogoutState', () => {
+  it('reads state from oidc params then query', () => {
+    expect(
+      readEndSessionLogoutState({
+        oidc: { params: { state: 'all.abc' } },
+        req: { query: { state: 'browser.ignored' } },
+      }),
+    ).toBe('all.abc');
+
+    expect(
+      readEndSessionLogoutState({
+        oidc: {},
+        req: { query: { state: 'browser.xyz' } },
+      }),
+    ).toBe('browser.xyz');
+  });
+
+  it('reads RP state from oidc session logout details (confirm hop)', () => {
+    expect(
+      readEndSessionLogoutState({
+        oidc: {
+          params: { logout: 'yes' },
+          session: { state: { state: 'all.from-session', secret: 'xsrf' } },
+        },
+      }),
+    ).toBe('all.from-session');
+  });
+});
+
 describe('OidcEndSessionListener', () => {
   const userAuthService = {
     logoutAllActiveSessions: jest.fn().mockResolvedValue(undefined),
+    logout: jest.fn().mockResolvedValue(undefined),
   } as unknown as UserAuthService;
 
   const cookieService = {
@@ -71,7 +104,7 @@ describe('OidcEndSessionListener', () => {
     listener.attach(provider as never);
   }
 
-  it('clears cookies synchronously and revokes sessions by id_token_hint sub', async () => {
+  it('revokes all hosted sessions when state has all. prefix', async () => {
     const res = { headersSent: false };
     const clearOrder: string[] = [];
 
@@ -87,9 +120,10 @@ describe('OidcEndSessionListener', () => {
 
     attachAndEmit({
       ip: '127.0.0.1',
-      req: { cookies: {}, ip: '127.0.0.1' },
+      req: { cookies: {}, ip: '127.0.0.1', query: { state: 'all.uuid' } },
       res,
       oidc: {
+        params: { state: 'all.uuid' },
         entities: {
           IdTokenHint: { payload: { sub: 'user-uuid' } },
         },
@@ -105,11 +139,42 @@ describe('OidcEndSessionListener', () => {
       'user-uuid',
       '127.0.0.1',
     );
+    expect(userAuthService.logout).not.toHaveBeenCalled();
     expect(clearOrder).toEqual(['clear', 'revoke']);
   });
 
-  it('falls back to access cookie sub when oidc context has no account id', async () => {
-    (jwtService.decode as jest.Mock).mockReturnValue({ sub: 'cookie-user' });
+  it('revokes only the current hosted session for this-browser logout', async () => {
+    (jwtService.decode as jest.Mock).mockReturnValue({
+      sub: 'cookie-user',
+      sessionId: 'session-1',
+    });
+
+    attachAndEmit({
+      req: {
+        cookies: { userAccessToken: 'jwt-token' },
+        ip: '10.0.0.1',
+        query: { state: 'browser.xyz' },
+      },
+      res: {},
+      oidc: { params: { state: 'browser.xyz' } },
+    });
+
+    expect(cookieService.clearUserTokens).toHaveBeenCalled();
+    await Promise.resolve();
+
+    expect(userAuthService.logout).toHaveBeenCalledWith(
+      'session-1',
+      'cookie-user',
+      '10.0.0.1',
+    );
+    expect(userAuthService.logoutAllActiveSessions).not.toHaveBeenCalled();
+  });
+
+  it('does not revoke all devices when state is missing', async () => {
+    (jwtService.decode as jest.Mock).mockReturnValue({
+      sub: 'cookie-user',
+      sessionId: 'session-1',
+    });
 
     attachAndEmit({
       req: {
@@ -120,15 +185,14 @@ describe('OidcEndSessionListener', () => {
       oidc: {},
     });
 
-    expect(cookieService.clearUserTokens).toHaveBeenCalled();
-    expect(jwtService.decode).toHaveBeenCalledWith('jwt-token');
-
     await Promise.resolve();
 
-    expect(userAuthService.logoutAllActiveSessions).toHaveBeenCalledWith(
+    expect(userAuthService.logout).toHaveBeenCalledWith(
+      'session-1',
       'cookie-user',
       '10.0.0.1',
     );
+    expect(userAuthService.logoutAllActiveSessions).not.toHaveBeenCalled();
   });
 
   it('clears cookies even when no account id can be resolved', async () => {
@@ -143,5 +207,6 @@ describe('OidcEndSessionListener', () => {
     await Promise.resolve();
 
     expect(userAuthService.logoutAllActiveSessions).not.toHaveBeenCalled();
+    expect(userAuthService.logout).not.toHaveBeenCalled();
   });
 });
