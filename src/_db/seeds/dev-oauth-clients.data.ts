@@ -17,7 +17,7 @@ export type DevOAuthClientSeed = {
 
 export const DEFAULT_OAUTH_GRANT_TYPES = ['authorization_code', 'refresh_token'];
 export const DEFAULT_OAUTH_RESPONSE_TYPES = ['code'];
-export const DEFAULT_OAUTH_SCOPES = ['openid', 'profile', 'email'];
+export const DEFAULT_OAUTH_SCOPES = ['openid', 'profile', 'email', 'offline_access'];
 
 /**
  * Local dev OAuth clients — keep in sync with docs/INTEGRATION.md § Local dev clients.

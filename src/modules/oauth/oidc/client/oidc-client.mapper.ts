@@ -31,6 +31,9 @@ export function mapOAuthClientToOidcPayload(
     .map((uri) => uri.uri);
 
   const isPublic = bundle.client.clientType === OAuthClientTypeEnum.PUBLIC;
+  if (!isPublic) {
+    return undefined;
+  }
 
   const grantTypes = bundle.client.grantTypes.filter(
     (grant) =>
@@ -43,6 +46,14 @@ export function mapOAuthClientToOidcPayload(
     grantTypes.push('authorization_code');
   }
 
+  const scopes = [...bundle.client.scopes];
+  if (
+    grantTypes.includes('refresh_token') &&
+    !scopes.includes('offline_access')
+  ) {
+    scopes.push('offline_access');
+  }
+
   return {
     client_id: bundle.client.clientId,
     grant_types: grantTypes,
@@ -50,8 +61,8 @@ export function mapOAuthClientToOidcPayload(
     redirect_uris: redirectUris,
     post_logout_redirect_uris:
       postLogoutRedirectUris.length > 0 ? postLogoutRedirectUris : undefined,
-    token_endpoint_auth_method: isPublic ? 'none' : 'client_secret_post',
-    scope: bundle.client.scopes.join(' '),
+    token_endpoint_auth_method: 'none',
+    scope: scopes.join(' '),
     application_type: 'web',
   };
 }

@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import {
-  generateClientSecret,
-  hashPassword,
-} from '@/libs/crypto/password';
-import {
   OAuthClientStatusEnum,
   OAuthClientTypeEnum,
   OAuthClientUriKindEnum,
 } from '@/_db/drizzle/enum';
 import { TOAuthClient } from '@/_db/drizzle/schema/oauth';
+import { OidcClientRegistry } from './oidc/client/oidc-client.registry';
 import {
   OAuthClientConflictError,
   OAuthClientNotFoundError,
@@ -29,7 +26,7 @@ import {
 
 const DEFAULT_GRANT_TYPES = ['authorization_code', 'refresh_token'];
 const DEFAULT_RESPONSE_TYPES = ['code'];
-const DEFAULT_SCOPES = ['openid', 'profile', 'email'];
+const DEFAULT_SCOPES = ['openid', 'profile', 'email', 'offline_access'];
 
 export type TCreateOAuthClientResult = TOAuthClientWithUris & {
   clientSecret?: string;
@@ -37,13 +34,22 @@ export type TCreateOAuthClientResult = TOAuthClientWithUris & {
 
 @Injectable()
 export class OAuthClientService {
-  constructor(private readonly oauthClientRepository: OAuthClientRepository) {}
+  constructor(
+    private readonly oauthClientRepository: OAuthClientRepository,
+    private readonly oidcClientRegistry: OidcClientRegistry,
+  ) {}
 
   async create(
     input: TCreateOAuthClientInput,
     createdBy?: string | null,
   ): Promise<TCreateOAuthClientResult> {
     const dto = createOAuthClientSchema.parse(input);
+    if (dto.clientType === OAuthClientTypeEnum.CONFIDENTIAL) {
+      throw new OAuthClientValidationError(
+        'Confidential OAuth clients are not supported until client-secret authentication is implemented',
+      );
+    }
+
     await this.assertClientIdAvailable(dto.clientId);
 
     const uriBundle = validateUriBundle({
@@ -59,10 +65,7 @@ export class OAuthClientService {
     let clientSecret: string | undefined;
     let clientSecretHash: string | null = null;
 
-    if (dto.clientType === OAuthClientTypeEnum.CONFIDENTIAL) {
-      clientSecret = generateClientSecret();
-      clientSecretHash = await hashPassword(clientSecret);
-    } else if (
+    if (
       dto.clientType === OAuthClientTypeEnum.PUBLIC &&
       dto.pkceRequired === false
     ) {
@@ -86,6 +89,8 @@ export class OAuthClientService {
       },
       this.toUriRows(uriBundle),
     );
+
+    this.oidcClientRegistry.invalidate(dto.clientId);
 
     return {
       ...created,
@@ -139,6 +144,7 @@ export class OAuthClientService {
       dto.allowedOrigins !== undefined;
 
     if (!shouldReplaceUris) {
+      this.oidcClientRegistry.invalidate(existing.client.clientId);
       return {
         client: updatedClient,
         uris: existing.uris,
@@ -157,6 +163,8 @@ export class OAuthClientService {
       this.toUriRows(uriBundle),
     );
 
+    this.oidcClientRegistry.invalidate(existing.client.clientId);
+
     return {
       client: updatedClient,
       uris,
@@ -172,6 +180,7 @@ export class OAuthClientService {
       throw new OAuthClientNotFoundError();
     }
 
+    this.oidcClientRegistry.invalidate(updated.clientId);
     return updated;
   }
 
@@ -184,6 +193,7 @@ export class OAuthClientService {
       throw new OAuthClientNotFoundError();
     }
 
+    this.oidcClientRegistry.invalidate(updated.clientId);
     return updated;
   }
 

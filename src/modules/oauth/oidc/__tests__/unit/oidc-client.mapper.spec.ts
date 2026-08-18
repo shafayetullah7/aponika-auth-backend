@@ -52,7 +52,7 @@ describe('mapOAuthClientToOidcPayload', () => {
       redirect_uris: ['http://localhost:3000/auth/callback'],
       post_logout_redirect_uris: ['http://localhost:3000/'],
       token_endpoint_auth_method: 'none',
-      scope: 'openid profile email',
+      scope: 'openid profile email offline_access',
       application_type: 'web',
     });
   });
@@ -61,6 +61,23 @@ describe('mapOAuthClientToOidcPayload', () => {
     const payload = mapOAuthClientToOidcPayload({
       client: { ...baseClient, status: OAuthClientStatusEnum.DISABLED },
       uris: [],
+    });
+
+    expect(payload).toBeUndefined();
+  });
+
+  it('returns undefined for confidential clients (secret auth not implemented)', () => {
+    const payload = mapOAuthClientToOidcPayload({
+      client: { ...baseClient, clientType: OAuthClientTypeEnum.CONFIDENTIAL },
+      uris: [
+        {
+          id: 'uri-1',
+          oauthClientId: baseClient.id,
+          uri: 'http://localhost:3000/auth/callback',
+          kind: OAuthClientUriKindEnum.REDIRECT,
+          createdAt: new Date(),
+        },
+      ],
     });
 
     expect(payload).toBeUndefined();

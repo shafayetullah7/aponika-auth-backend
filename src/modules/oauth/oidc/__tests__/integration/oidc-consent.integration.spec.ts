@@ -88,7 +88,12 @@ describe('OIDC consent integration', () => {
         id: 'consent-1',
         userId: 'user-1',
         oauthClientId: 'uuid-2',
-        scopes: ['openid', 'profile', 'email'],
+        scopes: [
+          'openid',
+          'profile',
+          'email',
+          'rs:http://localhost:3005',
+        ],
         remember: true,
         createdAt: new Date(),
         updatedAt: new Date(),

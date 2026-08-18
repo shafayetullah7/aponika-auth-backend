@@ -385,6 +385,28 @@ export class UserAuthService {
     });
   }
 
+  async logoutAllActiveSessions(
+    userId: string,
+    ip?: string | null,
+  ): Promise<void> {
+    const revoked = await this.userSessionService.revokeAllActiveByUserId(
+      userId,
+    );
+    if (revoked === 0) {
+      return;
+    }
+
+    await this.auditService.record({
+      actorType: AuditActorTypeEnum.USER,
+      actorId: userId,
+      action: AuditActionEnum.USER_LOGOUT,
+      resourceType: 'user_session',
+      resourceId: userId,
+      metadata: { revokedSessions: revoked },
+      ip: ip ?? null,
+    });
+  }
+
   getCurrentUser(auth: AuthenticatedUser): PublicUser {
     return this.toPublicUser(
       auth.user,

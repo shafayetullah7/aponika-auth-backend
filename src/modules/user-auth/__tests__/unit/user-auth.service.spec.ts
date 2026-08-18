@@ -48,6 +48,7 @@ describe('UserAuthService', () => {
     getSessionWithUser: jest.fn(),
     isSessionActive: jest.fn(),
     revokeSession: jest.fn(),
+    revokeAllActiveByUserId: jest.fn(),
   };
 
   const userLoginRateLimiter = {
@@ -478,6 +479,36 @@ describe('UserAuthService', () => {
         ip: '127.0.0.1',
       }),
     );
+  });
+
+  it('revokes all active sessions and audits bulk logout', async () => {
+    userSessionService.revokeAllActiveByUserId = jest.fn().mockResolvedValue(2);
+
+    await service.logoutAllActiveSessions(user.id, '127.0.0.1');
+
+    expect(userSessionService.revokeAllActiveByUserId).toHaveBeenCalledWith(
+      user.id,
+    );
+    expect(auditService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorType: AuditActorTypeEnum.USER,
+        actorId: user.id,
+        action: AuditActionEnum.USER_LOGOUT,
+        resourceType: 'user_session',
+        resourceId: user.id,
+        metadata: { revokedSessions: 2 },
+        ip: '127.0.0.1',
+      }),
+    );
+  });
+
+  it('skips audit when no active sessions remain', async () => {
+    userSessionService.revokeAllActiveByUserId = jest.fn().mockResolvedValue(0);
+    auditService.record.mockClear();
+
+    await service.logoutAllActiveSessions(user.id, '127.0.0.1');
+
+    expect(auditService.record).not.toHaveBeenCalled();
   });
 
   it('rejects refresh when session is revoked', async () => {

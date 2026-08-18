@@ -1,74 +1,77 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import type { Request, Response } from 'express';
 import { CookieService } from '@/libs/cookie/cookie.service';
 import { UserAuthService } from '@/modules/user-auth/user-auth.service';
 import type { OidcProviderInstance } from '../provider/oidc-provider.factory';
-import { isOidcEndSessionSuccessContext } from '../provider/oidc-provider.types';
-import { OidcUserSessionBridge } from '../login/oidc-user-session.bridge';
+import {
+  isOidcEndSessionSuccessContext,
+  readEndSessionAccountId,
+  readOidcExpressPair,
+} from '../provider/oidc-provider.types';
 
 @Injectable()
 export class OidcEndSessionListener {
   private readonly logger = new Logger(OidcEndSessionListener.name);
 
   constructor(
-    private readonly sessionBridge: OidcUserSessionBridge,
     private readonly userAuthService: UserAuthService,
     private readonly cookieService: CookieService,
+    private readonly jwtService: JwtService,
   ) {}
 
   attach(provider: OidcProviderInstance): void {
     provider.on('end_session.success', (ctx) => {
-      void this.handleEndSessionSuccess(ctx);
+      this.handleEndSessionSuccess(ctx);
     });
   }
 
-  private async handleEndSessionSuccess(ctx: unknown): Promise<void> {
+  private handleEndSessionSuccess(ctx: unknown): void {
     if (!isOidcEndSessionSuccessContext(ctx)) {
       return;
     }
 
-    const pair = this.readExpressPair(ctx);
+    const pair = readOidcExpressPair(ctx);
     if (!pair) {
       return;
     }
 
-    try {
-      const auth = await this.sessionBridge.resolveAuthenticatedUser(
-        pair.req,
-        pair.res,
-      );
-      if (!auth) {
-        return;
-      }
+    const req = pair.req as Request;
+    const res = pair.res as Response;
+    const accountId =
+      readEndSessionAccountId(ctx) ?? this.readUserIdFromAccessCookie(req);
 
-      await this.userAuthService.logout(
-        auth.session.id,
-        auth.user.id,
-        pair.req.ip ?? null,
-      );
-      this.cookieService.clearUserTokens(pair.res);
+    // Clear cookies synchronously — oidc-provider redirects immediately after emit.
+    this.cookieService.clearUserTokens(res);
+
+    if (!accountId) {
+      return;
+    }
+
+    void this.revokeHostedSessions(accountId, req.ip ?? ctx.ip ?? null);
+  }
+
+  private readUserIdFromAccessCookie(req: Request): string | undefined {
+    const raw = req.cookies?.userAccessToken;
+    if (typeof raw !== 'string' || !raw.trim()) {
+      return undefined;
+    }
+
+    const decoded = this.jwtService.decode(raw.trim()) as { sub?: string } | null;
+    return typeof decoded?.sub === 'string' ? decoded.sub : undefined;
+  }
+
+  private async revokeHostedSessions(
+    userId: string,
+    ip: string | null,
+  ): Promise<void> {
+    try {
+      await this.userAuthService.logoutAllActiveSessions(userId, ip);
     } catch (error: unknown) {
       this.logger.warn(
         'Failed to revoke hosted login session during OIDC end_session',
         error instanceof Error ? error.stack : error,
       );
     }
-  }
-
-  private readExpressPair(
-    ctx: unknown,
-  ): { req: Request; res: Response } | null {
-    if (!ctx || typeof ctx !== 'object') {
-      return null;
-    }
-
-    const req = Reflect.get(ctx, 'req');
-    const res = Reflect.get(ctx, 'res');
-
-    if (!req || !res) {
-      return null;
-    }
-
-    return { req: req as Request, res: res as Response };
   }
 }

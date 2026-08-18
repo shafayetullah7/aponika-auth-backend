@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { parse as parseUrl } from 'node:url';
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import {
   OAuthClientStatusEnum,
@@ -8,6 +9,7 @@ import {
   OAuthClientUriKindEnum,
 } from '@/_db/drizzle/enum';
 import type { AppEnvService } from '@/libs/config/app-env.service';
+import { CookieService } from '@/libs/cookie/cookie.service';
 import type { IdentityRepository } from '@/modules/identity/identity.repository';
 import type { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
 import type { OAuthConsentRepository } from '@/modules/oauth/repositories/oauth-consent.repository';
@@ -17,12 +19,14 @@ import { OidcConsentGrantService } from '../../consent/oidc-consent-grant.servic
 import { OidcHostedErrorService } from '../../login/oidc-hosted-error.service';
 import { OidcInteractionService } from '../../login/oidc-interaction.service';
 import { OidcLogoutUiService } from '../../logout/oidc-logout-ui.service';
+import { OidcEndSessionListener } from '../../logout/oidc-end-session.listener';
 import { OidcJwksService } from '../../boot/oidc-jwks.service';
 import { OidcProviderFactory } from '../../provider/oidc-provider.factory';
 import { OidcResourceConfigService } from '../../token/oidc-resource.config';
 import { OidcTokenClaimsService } from '../../token/oidc-token-claims.service';
 import { OIDC_INTERACTION_PATH_PREFIX, OIDC_ROUTE_PATHS } from '../../provider/oidc-routes.constants';
 import type { OidcUserSessionBridge } from '../../login/oidc-user-session.bridge';
+import type { UserAuthService } from '@/modules/user-auth/user-auth.service';
 
 const ISSUER = 'http://localhost:3010';
 const REDIRECT_URI = 'http://localhost:3000/auth/callback';
@@ -42,6 +46,9 @@ export function createTestAppEnv(
     OIDC_DEFAULT_RESOURCE: TEST_OIDC_RESOURCE,
     OIDC_JWKS_PRIVATE_KEY_PATH: '',
     JWT_USER_ACCESS_SECRET: 'dev-only-change-me-user-access-secret-32chars-min',
+    OIDC_COOKIE_KEYS: ['test-oidc-cookie-signing-key-not-jwt-secret'],
+    isProduction: false,
+    JWT_USER_ACCESS_EXP: '15m',
     AUTH_FRONTEND_URL: 'http://localhost:3011',
     SESSION_MAX_AGE: 604800000,
     ...overrides,
@@ -97,7 +104,8 @@ export function buildAuthorizeQuery(challenge: string) {
     client_id: 'byte-forge-web',
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
-    scope: 'openid profile email',
+    scope: 'openid profile email offline_access',
+    prompt: 'consent',
     code_challenge: challenge,
     code_challenge_method: 'S256',
     state: 'test-state',
@@ -304,6 +312,18 @@ type CreateOidcTestServerOptions = {
   >;
   oauthClientRepository?: Pick<OAuthClientRepository, 'findByClientId'>;
   consentRepository?: Pick<OAuthConsentRepository, 'findRemembered' | 'upsert'>;
+  endSession?: {
+    userAuthService?: Pick<UserAuthService, 'logoutAllActiveSessions'>;
+    cookieService?: CookieService;
+  };
+};
+
+export type OidcEndSessionTestDeps = {
+  userAuthService: Pick<UserAuthService, 'logoutAllActiveSessions'> & {
+    logoutAllActiveSessions: jest.Mock;
+  };
+  cookieService: CookieService;
+  endSessionListener: OidcEndSessionListener;
 };
 
 function augmentRequest(req: IncomingMessage, pathname: string): void {
@@ -328,6 +348,7 @@ export async function createOidcTestServer(
   interactionService: OidcInteractionService;
   provider: Awaited<ReturnType<OidcProviderFactory['create']>>;
   consentRepository: Pick<OAuthConsentRepository, 'findRemembered' | 'upsert'>;
+  endSession?: OidcEndSessionTestDeps;
 }> {
   const appEnv = options.appEnv ?? createTestAppEnv();
   const registry = options.registry ?? new OidcClientRegistry({} as never);
@@ -371,6 +392,29 @@ export async function createOidcTestServer(
     {} as never,
   );
   const provider = await factory.create();
+
+  let endSession: OidcEndSessionTestDeps | undefined;
+  if (options.endSession) {
+    const userAuthService = {
+      logoutAllActiveSessions:
+        options.endSession.userAuthService?.logoutAllActiveSessions ??
+        jest.fn().mockResolvedValue(undefined),
+    };
+    const cookieService =
+      options.endSession.cookieService ?? new CookieService(appEnv);
+    const endSessionListener = new OidcEndSessionListener(
+      userAuthService as UserAuthService,
+      cookieService,
+      new JwtService({}),
+    );
+    endSessionListener.attach(provider);
+    endSession = {
+      userAuthService: userAuthService as OidcEndSessionTestDeps['userAuthService'],
+      cookieService,
+      endSessionListener,
+    };
+  }
+
   const oidcHandler = provider.callback();
 
   const server = createServer((req, res) => {
@@ -407,6 +451,7 @@ export async function createOidcTestServer(
     interactionService,
     provider,
     consentRepository,
+    endSession,
   };
 }
 
@@ -515,17 +560,34 @@ export async function obtainOidcTokens(
   return tokenRes.body as OidcTokenResponse;
 }
 
+/**
+ * Mirrors what a browser posts: the form's own hidden fields only. Button values
+ * are excluded because the page submits the form via script.
+ */
 export function parseEndSessionLogoutForm(html: string): {
   action: string;
-  xsrf: string;
+  fields: Record<string, string>;
 } | null {
-  const xsrf = html.match(/name="xsrf"\s+value="([^"]+)"/)?.[1];
-  const action = html.match(/action="([^"]+)"/)?.[1];
-  if (!xsrf || !action) {
+  const formHtml = html.match(/<form[^>]*id="op\.logoutForm"[\s\S]*?<\/form>/)?.[0];
+  const action = formHtml?.match(/action="([^"]+)"/)?.[1];
+  if (!formHtml || !action) {
     return null;
   }
 
-  return { action, xsrf };
+  const fields: Record<string, string> = {};
+  for (const input of formHtml.matchAll(/<input\b[^>]*>/g)) {
+    const name = input[0].match(/name="([^"]+)"/)?.[1];
+    const value = input[0].match(/value="([^"]*)"/)?.[1];
+    if (name) {
+      fields[name] = value ?? '';
+    }
+  }
+
+  if (!fields.xsrf) {
+    return null;
+  }
+
+  return { action, fields };
 }
 
 export async function completeRpInitiatedLogout(
@@ -535,7 +597,7 @@ export async function completeRpInitiatedLogout(
     post_logout_redirect_uri: string;
     state?: string;
   },
-): Promise<string> {
+): Promise<{ redirectUrl: string; setCookie?: string[] }> {
   const initRes = await agent
     .get(OIDC_ROUTE_PATHS.endSession)
     .query(params)
@@ -549,7 +611,7 @@ export async function completeRpInitiatedLogout(
   const confirmRes = await agent
     .post(resolveAuthorizeRedirect(form.action))
     .type('form')
-    .send({ xsrf: form.xsrf, logout: 'yes' })
+    .send(form.fields)
     .redirects(0)
     .expect(303);
 
@@ -558,5 +620,12 @@ export async function completeRpInitiatedLogout(
     throw new Error('end_session confirm did not redirect');
   }
 
-  return location;
+  const rawSetCookie = confirmRes.headers['set-cookie'];
+  const setCookie = Array.isArray(rawSetCookie)
+    ? rawSetCookie
+    : rawSetCookie
+      ? [rawSetCookie]
+      : undefined;
+
+  return { redirectUrl: location, setCookie };
 }

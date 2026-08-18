@@ -17,6 +17,7 @@ import type { OidcProviderInstance, OidcStoredInteraction } from '../provider/oi
 import { createCapturingInteractionResponse } from './oidc-interaction-request.util';
 import { OidcHostedErrorService } from './oidc-hosted-error.service';
 import { OidcUserSessionBridge } from './oidc-user-session.bridge';
+import { RESOURCE_SCOPE_PREFIX } from '../consent/oidc-consent-grant.service';
 
 type OidcInteractionPrompt = {
   name: string;
@@ -350,15 +351,24 @@ export class OidcInteractionService {
         details.params.client_id,
       );
       if (client) {
-        const scopes = grant
+        const oidcScopes = grant
           .getOIDCScope()
           .split(' ')
           .filter((scope) => scope.length > 0);
+        const resourceIndicators = Object.keys(missingResourceScopes ?? {});
+        if (resourceIndicators.length === 0) {
+          resourceIndicators.push(this.appEnv.OIDC_DEFAULT_RESOURCE);
+        }
 
         await this.consentRepository.upsert({
           userId: accountId,
           oauthClientId: client.id,
-          scopes,
+          scopes: [
+            ...oidcScopes,
+            ...resourceIndicators.map(
+              (indicator) => `${RESOURCE_SCOPE_PREFIX}${indicator}`,
+            ),
+          ],
           remember: true,
         });
       }

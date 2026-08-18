@@ -109,7 +109,15 @@ export class OidcProviderFactory {
       adapter,
       clients: [],
       cookies: {
-        keys: [this.appEnv.JWT_USER_ACCESS_SECRET],
+        keys: this.appEnv.OIDC_COOKIE_KEYS,
+        long: {
+          secure: this.appEnv.isProduction,
+          sameSite: 'lax',
+        },
+        short: {
+          secure: this.appEnv.isProduction,
+          sameSite: 'lax',
+        },
       },
       features: {
         devInteractions: { enabled: false },
@@ -135,7 +143,7 @@ export class OidcProviderFactory {
         required: () => true,
       },
       routes: OIDC_PROVIDER_ROUTES,
-      scopes: ['openid', 'profile', 'email'],
+      scopes: ['openid', 'profile', 'email', 'offline_access'],
       claims: {
         openid: ['sub'],
         email: ['email', 'email_verified'],
@@ -147,12 +155,28 @@ export class OidcProviderFactory {
         AuthorizationCode: OIDC_AUTHORIZATION_CODE_TTL_SECONDS,
         RefreshToken: this.appEnv.OIDC_REFRESH_TOKEN_TTL,
         Interaction: this.appEnv.OIDC_INTERACTION_TTL,
+        Session: Math.round(this.appEnv.SESSION_MAX_AGE / 1000),
+        Grant: this.appEnv.OIDC_REFRESH_TOKEN_TTL,
       },
       jwks,
       findAccount: (ctx, id) => this.accountService.findAccount(ctx, id),
       extraTokenClaims: this.tokenClaims.extraTokenClaims,
       loadExistingGrant: this.consentGrantService.loadExistingGrant,
-      issueRefreshToken: async () => true,
+      issueRefreshToken: async (_ctx, client, code) => {
+        const refreshAllowed =
+          typeof client?.grantTypeAllowed === 'function'
+            ? client.grantTypeAllowed('refresh_token')
+            : true;
+        const scopes = code?.scopes as
+          | Set<string>
+          | { has?: (scope: string) => boolean }
+          | undefined;
+        const hasOfflineAccess =
+          typeof scopes?.has === 'function'
+            ? Boolean(scopes.has('offline_access'))
+            : false;
+        return refreshAllowed && hasOfflineAccess;
+      },
       rotateRefreshToken: async () => true,
       conformIdTokenClaims: true,
       renderError: this.hostedErrorService.renderError,

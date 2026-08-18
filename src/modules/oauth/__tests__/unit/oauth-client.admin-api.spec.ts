@@ -2,6 +2,7 @@ import { OAuthClientStatusEnum } from '@/_db/drizzle/enum';
 import { OAuthClientNotFoundError } from '../../domain/oauth-client.errors';
 import { OAuthClientRepository } from '../../repositories/oauth-client.repository';
 import { OAuthClientService } from '../../oauth-client.service';
+import { OidcClientRegistry } from '../../oidc/client/oidc-client.registry';
 
 jest.mock('@/libs/crypto/password', () => ({
   generateClientSecret: jest.fn(() => 'generated-client-secret'),
@@ -22,6 +23,7 @@ describe('OAuthClientService list/find/enable', () => {
     jest.clearAllMocks();
     service = new OAuthClientService(
       repository as unknown as OAuthClientRepository,
+      { invalidate: jest.fn() } as unknown as OidcClientRegistry,
     );
   });
 

@@ -2,6 +2,21 @@ import { z } from 'zod';
 
 const jwtSecret = z.string().min(32, 'JWT secrets must be at least 32 characters');
 
+/** Dev-only OIDC cookie signing key — must not match JWT_USER_ACCESS_SECRET. */
+export const OIDC_COOKIE_KEYS_DEV_DEFAULT =
+  'dev-oidc-cookie-signing-key-do-not-use-in-prod';
+
+export function parseOidcCookieKeys(raw: string | undefined): string[] {
+  if (!raw?.trim()) {
+    return [];
+  }
+
+  return raw
+    .split(',')
+    .map((key) => key.trim())
+    .filter((key) => key.length > 0);
+}
+
 const durationString = z
   .string()
   .regex(/^\d+[smhd]$/, 'Expected duration like 15m, 7d, 1h');
@@ -51,6 +66,12 @@ export const envSchema = z.object({
    */
   OIDC_JWKS_PRIVATE_KEY_PATH: z.string().optional().default(''),
 
+  /**
+   * Comma-separated keys for signing OIDC session/interaction cookies.
+   * Must not reuse JWT_USER_ACCESS_SECRET. Required in production.
+   */
+  OIDC_COOKIE_KEYS: z.string().optional(),
+
   COOKIE_DOMAIN: z.string().min(1),
   SESSION_MAX_AGE: z.coerce.number().int().positive(),
 
@@ -84,6 +105,26 @@ export const envSchema = z.object({
   /** Auth frontend base URL for verification links (no trailing slash). */
   AUTH_FRONTEND_URL: z.string().url().default('http://localhost:3011'),
 }).superRefine((data, ctx) => {
+  if (data.NODE_ENV === 'production') {
+    const cookieKeys = parseOidcCookieKeys(data.OIDC_COOKIE_KEYS);
+    if (cookieKeys.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'OIDC_COOKIE_KEYS is required when NODE_ENV=production',
+        path: ['OIDC_COOKIE_KEYS'],
+      });
+    }
+
+    if (cookieKeys.includes(data.JWT_USER_ACCESS_SECRET)) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'OIDC_COOKIE_KEYS must not reuse JWT_USER_ACCESS_SECRET',
+        path: ['OIDC_COOKIE_KEYS'],
+      });
+    }
+  }
+
   const requiresSmtp =
     data.MAIL_PROVIDER === 'smtp' || data.MAIL_PROVIDER === 'gmail';
 

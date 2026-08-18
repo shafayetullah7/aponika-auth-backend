@@ -58,4 +58,8 @@ export class UserSessionService {
   async revokeSession(sessionId: string): Promise<TUserSession | null> {
     return this.userSessionRepository.revoke(sessionId);
   }
+
+  async revokeAllActiveByUserId(userId: string): Promise<number> {
+    return this.userSessionRepository.revokeAllActiveByUserId(userId);
+  }
 }

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AppEnv } from './env.schema';
+import {
+  AppEnv,
+  OIDC_COOKIE_KEYS_DEV_DEFAULT,
+  parseOidcCookieKeys,
+} from './env.schema';
 
 @Injectable()
 export class AppEnvService {
@@ -80,6 +84,16 @@ export class AppEnvService {
 
   get OIDC_JWKS_PRIVATE_KEY_PATH() {
     return this.configService.get('OIDC_JWKS_PRIVATE_KEY_PATH', { infer: true });
+  }
+
+  get OIDC_COOKIE_KEYS(): string[] {
+    const raw = this.configService.get('OIDC_COOKIE_KEYS', { infer: true });
+    const keys = parseOidcCookieKeys(raw);
+    if (keys.length > 0) {
+      return keys;
+    }
+
+    return [OIDC_COOKIE_KEYS_DEV_DEFAULT];
   }
 
   get COOKIE_DOMAIN() {

@@ -65,7 +65,7 @@ Files are listed in **runtime order**, not alphabetically. Full detail: [CODE_FL
 3. Cache miss → `OAuthClientRepository.findByClientIdWithUris()`
 4. `mapOAuthClientToOidcPayload()` — disabled clients return `undefined`
 
-Confidential client secrets are stored hashed in DB; token auth for confidential clients is deferred.
+Confidential client secrets are stored hashed in DB; creating confidential clients is rejected until token-endpoint secret auth is implemented.
 
 ### Login and authorize (F23, F27)
 
@@ -112,12 +112,15 @@ Third-party clients redirect to `/consent` on the auth frontend; `trusted_first_
 
 `GET/POST /session/end` for RP-initiated logout; `post_logout_redirect_uri` must be registered per client.
 
+The confirm page auto-submits with `form.submit()`. That does **not** include button values, so `logoutSource` injects a hidden `logout=yes` field. Without it, oidc-provider keeps the SSO session and the next authorize is silent.
+
 ## Boot requirements
 
 | Env | Dev | Production |
 |-----|-----|------------|
 | `OIDC_ISSUER` | Required, no trailing slash | Required |
 | `OIDC_JWKS_PRIVATE_KEY_PATH` | Optional (library dev keystore) | **Required** |
+| `OIDC_COOKIE_KEYS` | Dev default (not the JWT secret) | **Required**, comma-separated, must not reuse `JWT_USER_ACCESS_SECRET` |
 
 Generate a dev signing key:
 

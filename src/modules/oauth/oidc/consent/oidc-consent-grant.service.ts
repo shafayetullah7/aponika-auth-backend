@@ -3,10 +3,13 @@ import { AppEnvService } from '@/libs/config/app-env.service';
 import { OAuthConsentRepository } from '@/modules/oauth/repositories/oauth-consent.repository';
 import { OAuthClientRepository } from '@/modules/oauth/repositories/oauth-client.repository';
 
+export const RESOURCE_SCOPE_PREFIX = 'rs:';
+
 type OidcLoadGrantContext = {
   oidc: {
     account?: { accountId: string };
     client: { clientId: string };
+    params?: { resource?: string | string[] };
     requestParamOIDCScopes: Set<string>;
     result?: { consent?: { grantId?: string } };
     session?: { grantIdFor: (clientId: string) => string | undefined };
@@ -52,20 +55,19 @@ export class OidcConsentGrantService {
           client.id,
         );
 
-        if (
-          consent &&
-          this.scopesAreGranted(consent.scopes, oidc.requestParamOIDCScopes)
-        ) {
+        if (consent && this.rememberedGrantCoversRequest(consent.scopes, oidc)) {
           const grant = new oidc.provider.Grant({
             accountId,
             clientId: oidc.client.clientId,
           }) as OidcGrantInstance;
 
-          grant.addOIDCScope([...oidc.requestParamOIDCScopes].join(' '));
-          grant.addResourceScope(
-            this.appEnv.OIDC_DEFAULT_RESOURCE,
-            [...oidc.requestParamOIDCScopes].join(' '),
-          );
+          const oidcScopes = this.oidcScopesFromStored(consent.scopes);
+          grant.addOIDCScope(oidcScopes.join(' '));
+          for (const indicator of this.resourceIndicatorsFromStored(
+            consent.scopes,
+          )) {
+            grant.addResourceScope(indicator, oidcScopes.join(' '));
+          }
           await grant.save();
 
           return grant;
@@ -84,6 +86,19 @@ export class OidcConsentGrantService {
     return undefined;
   };
 
+  rememberedGrantCoversRequest(
+    storedScopes: string[],
+    oidc: OidcLoadGrantContext['oidc'],
+  ): boolean {
+    if (!this.scopesAreGranted(this.oidcScopesFromStored(storedScopes), oidc.requestParamOIDCScopes)) {
+      return false;
+    }
+
+    const storedResources = this.resourceIndicatorsFromStored(storedScopes);
+    const requested = this.requestedResourceIndicators(oidc.params?.resource);
+    return requested.every((indicator) => storedResources.includes(indicator));
+  }
+
   scopesAreGranted(
     storedScopes: string[],
     requestedScopes: Iterable<string>,
@@ -96,5 +111,31 @@ export class OidcConsentGrantService {
     }
 
     return true;
+  }
+
+  oidcScopesFromStored(storedScopes: string[]): string[] {
+    return storedScopes.filter((scope) => !scope.startsWith(RESOURCE_SCOPE_PREFIX));
+  }
+
+  resourceIndicatorsFromStored(storedScopes: string[]): string[] {
+    return storedScopes
+      .filter((scope) => scope.startsWith(RESOURCE_SCOPE_PREFIX))
+      .map((scope) => scope.slice(RESOURCE_SCOPE_PREFIX.length));
+  }
+
+  encodeResourceIndicator(indicator: string): string {
+    return `${RESOURCE_SCOPE_PREFIX}${indicator}`;
+  }
+
+  requestedResourceIndicators(
+    resource: string | string[] | undefined,
+  ): string[] {
+    if (Array.isArray(resource) && resource.length > 0) {
+      return resource;
+    }
+    if (typeof resource === 'string' && resource.length > 0) {
+      return [resource];
+    }
+    return [this.appEnv.OIDC_DEFAULT_RESOURCE];
   }
 }
