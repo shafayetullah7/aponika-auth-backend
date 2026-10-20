@@ -11,7 +11,7 @@ import {
   toUriRows,
 } from './dev-oauth-clients.data';
 
-async function syncRedirectUris(
+async function syncClientUris(
   oauthClientId: string,
   definition: (typeof DEV_OAUTH_CLIENTS)[number],
 ): Promise<void> {
@@ -21,6 +21,7 @@ async function syncRedirectUris(
     allowedOrigins: definition.allowedOrigins,
   });
   const uriRows = toUriRows(uriBundle);
+  const desired = new Set(uriRows.map((row) => `${row.kind}\0${row.uri}`));
 
   for (const row of uriRows) {
     const [existingUri] = await seedDb
@@ -41,8 +42,32 @@ async function syncRedirectUris(
         uri: row.uri,
         kind: row.kind,
       });
-      console.log(`➕ Added ${row.kind} URI for ${definition.clientId}: ${row.uri}`);
+      console.log(
+        `➕ Added ${row.kind} URI for ${definition.clientId}: ${row.uri}`,
+      );
     }
+  }
+
+  const existingRows = await seedDb
+    .select({
+      id: oauthClientRedirectUrisTable.id,
+      kind: oauthClientRedirectUrisTable.kind,
+      uri: oauthClientRedirectUrisTable.uri,
+    })
+    .from(oauthClientRedirectUrisTable)
+    .where(eq(oauthClientRedirectUrisTable.oauthClientId, oauthClientId));
+
+  for (const row of existingRows) {
+    const key = `${row.kind}\0${row.uri}`;
+    if (desired.has(key)) {
+      continue;
+    }
+    await seedDb
+      .delete(oauthClientRedirectUrisTable)
+      .where(eq(oauthClientRedirectUrisTable.id, row.id));
+    console.log(
+      `➖ Removed ${row.kind} URI for ${definition.clientId}: ${row.uri}`,
+    );
   }
 }
 
@@ -63,7 +88,7 @@ export async function seedOAuthClients(): Promise<void> {
           trustedFirstParty: definition.trustedFirstParty ?? false,
         })
         .where(eq(oauthClientsTable.clientId, definition.clientId));
-      await syncRedirectUris(existing.id, definition);
+      await syncClientUris(existing.id, definition);
       console.log(`🔄 Synced ${definition.clientId} trusted_first_party + URIs`);
       continue;
     }

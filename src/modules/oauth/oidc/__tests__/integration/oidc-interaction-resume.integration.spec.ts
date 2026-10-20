@@ -56,12 +56,13 @@ describe('OIDC interaction resume integration', () => {
         const { location } = await followOidcRedirectsUntil(
           agent,
           resumeRes,
-          (nextLocation) => nextLocation.includes('/auth/callback'),
+          (nextLocation) =>
+            nextLocation.includes('/api/v1/user/auth/oidc/callback'),
         );
 
         const callbackUrl = new URL(location, 'http://localhost:3010');
-        expect(callbackUrl.origin).toBe('http://localhost:3000');
-        expect(callbackUrl.pathname).toBe('/auth/callback');
+        expect(callbackUrl.origin).toBe('http://localhost:3005');
+        expect(callbackUrl.pathname).toBe('/api/v1/user/auth/oidc/callback');
         expect(callbackUrl.searchParams.get('code')).toBeTruthy();
         expect(callbackUrl.searchParams.get('state')).toBe('test-state');
       } finally {

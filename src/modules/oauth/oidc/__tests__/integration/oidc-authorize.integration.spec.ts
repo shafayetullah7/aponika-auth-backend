@@ -93,10 +93,12 @@ describe('OIDC authorize integration', () => {
             break;
           }
 
-          if (location.includes('/auth/callback')) {
+          if (location.includes('/api/v1/user/auth/oidc/callback')) {
             const callbackUrl = new URL(location);
-            expect(callbackUrl.origin).toBe('http://localhost:3000');
-            expect(callbackUrl.pathname).toBe('/auth/callback');
+            expect(callbackUrl.origin).toBe('http://localhost:3005');
+            expect(callbackUrl.pathname).toBe(
+              '/api/v1/user/auth/oidc/callback',
+            );
             expect(callbackUrl.searchParams.get('code')).toBeTruthy();
             expect(callbackUrl.searchParams.get('state')).toBe('test-state');
             return;

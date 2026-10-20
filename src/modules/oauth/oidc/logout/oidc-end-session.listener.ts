@@ -49,7 +49,8 @@ export class OidcEndSessionListener {
     const accountId =
       readEndSessionAccountId(ctx) ?? hosted?.sub;
 
-    // Clear cookies synchronously — oidc-provider redirects immediately after emit.
+    // Clear hosted SSO cookies with the same Domain/path/SameSite/Secure as set
+    // (COOKIE_DOMAIN must span :3010 issuer + :3011 login UI). Sync — OP redirects after emit.
     this.cookieService.clearUserTokens(res);
 
     if (!accountId) {

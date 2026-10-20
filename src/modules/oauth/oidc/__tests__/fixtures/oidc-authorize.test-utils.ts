@@ -29,9 +29,11 @@ import type { OidcUserSessionBridge } from '../../login/oidc-user-session.bridge
 import type { UserAuthService } from '@/modules/user-auth/user-auth.service';
 
 const ISSUER = 'http://localhost:3010';
-const REDIRECT_URI = 'http://localhost:3000/auth/callback';
+const REDIRECT_URI =
+  'http://localhost:3005/api/v1/user/auth/oidc/callback';
 const POST_LOGOUT_REDIRECT_URI = 'http://localhost:3000/';
 const THIRD_PARTY_REDIRECT_URI = 'http://localhost:4000/auth/callback';
+export const BF_OIDC_CALLBACK_PATH = '/api/v1/user/auth/oidc/callback';
 export const TEST_OIDC_RESOURCE = 'http://localhost:3005';
 
 export function createTestAppEnv(
@@ -490,7 +492,7 @@ export async function obtainAuthorizationCode(
       break;
     }
 
-    if (location.includes('/auth/callback')) {
+    if (location.includes(BF_OIDC_CALLBACK_PATH)) {
       const callbackUrl = new URL(location, ISSUER);
       const code = callbackUrl.searchParams.get('code');
       if (!code) {

@@ -84,7 +84,7 @@ describe('OAuthClientService', () => {
         {
           id: 'uri-1',
           oauthClientId: 'client-uuid',
-          uri: 'http://localhost:3000/auth/callback',
+          uri: 'http://localhost:3005/api/v1/user/auth/oidc/callback',
           kind: OAuthClientUriKindEnum.REDIRECT,
           createdAt,
         },
@@ -95,7 +95,7 @@ describe('OAuthClientService', () => {
       clientId: 'byte-forge-web',
       name: 'Byte Forge Web',
       clientType: OAuthClientTypeEnum.PUBLIC,
-      redirectUris: ['http://localhost:3000/auth/callback'],
+      redirectUris: ['http://localhost:3005/api/v1/user/auth/oidc/callback'],
     });
 
     expect(repository.createWithUris).toHaveBeenCalledWith(
@@ -107,7 +107,7 @@ describe('OAuthClientService', () => {
       }),
       expect.arrayContaining([
         expect.objectContaining({
-          uri: 'http://localhost:3000/auth/callback',
+          uri: 'http://localhost:3005/api/v1/user/auth/oidc/callback',
           kind: OAuthClientUriKindEnum.REDIRECT,
         }),
       ]),
@@ -154,7 +154,7 @@ describe('OAuthClientService', () => {
         clientId: 'byte-forge-web',
         name: 'Byte Forge Web',
         clientType: OAuthClientTypeEnum.PUBLIC,
-        redirectUris: ['http://localhost:3000/auth/callback'],
+        redirectUris: ['http://localhost:3005/api/v1/user/auth/oidc/callback'],
       }),
     ).rejects.toBeInstanceOf(OAuthClientConflictError);
   });
@@ -167,7 +167,7 @@ describe('OAuthClientService', () => {
         clientId: 'byte-forge-web',
         name: 'Byte Forge Web',
         clientType: OAuthClientTypeEnum.PUBLIC,
-        redirectUris: ['http://localhost:3000/auth/callback'],
+        redirectUris: ['http://localhost:3005/api/v1/user/auth/oidc/callback'],
         pkceRequired: false,
       }),
     ).rejects.toThrow('Public clients must require PKCE');

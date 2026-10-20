@@ -31,7 +31,7 @@ describe('mapOAuthClientToOidcPayload', () => {
         {
           id: 'uri-1',
           oauthClientId: baseClient.id,
-          uri: 'http://localhost:3000/auth/callback',
+          uri: 'http://localhost:3005/api/v1/user/auth/oidc/callback',
           kind: OAuthClientUriKindEnum.REDIRECT,
           createdAt: new Date(),
         },
@@ -49,7 +49,7 @@ describe('mapOAuthClientToOidcPayload', () => {
       client_id: 'byte-forge-web',
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
-      redirect_uris: ['http://localhost:3000/auth/callback'],
+      redirect_uris: ['http://localhost:3005/api/v1/user/auth/oidc/callback'],
       post_logout_redirect_uris: ['http://localhost:3000/'],
       token_endpoint_auth_method: 'none',
       scope: 'openid profile email offline_access',
@@ -73,7 +73,7 @@ describe('mapOAuthClientToOidcPayload', () => {
         {
           id: 'uri-1',
           oauthClientId: baseClient.id,
-          uri: 'http://localhost:3000/auth/callback',
+          uri: 'http://localhost:3005/api/v1/user/auth/oidc/callback',
           kind: OAuthClientUriKindEnum.REDIRECT,
           createdAt: new Date(),
         },

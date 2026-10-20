@@ -60,7 +60,7 @@ describe('AdminClientsController', () => {
         {
           id: 'uri-1',
           oauthClientId: 'client-uuid',
-          uri: 'http://localhost:3000/auth/callback',
+          uri: 'http://localhost:3005/api/v1/user/auth/oidc/callback',
           kind: 'redirect',
           createdAt: new Date(),
         },
@@ -80,7 +80,9 @@ describe('AdminClientsController', () => {
         clientId: 'byte-forge-web',
         name: 'Byte Forge Web',
         clientType: 'public',
-        redirectUris: ['http://localhost:3000/auth/callback'],
+        redirectUris: [
+          'http://localhost:3005/api/v1/user/auth/oidc/callback',
+        ],
       } as never,
       auth,
       { headers: {}, socket: { remoteAddress: '127.0.0.1' } } as never,

@@ -2,19 +2,24 @@
 set -euo pipefail
 
 # Manual PKCE authorization_code + token exchange against local issuer.
-# Prerequisites: backend on :3010, seeded `byte-forge-web` client, logged-in user session cookies optional for browser flow.
+# Prerequisites: backend on :3010, seeded `byte-forge-web` client.
+#
+# Default redirect is the Byte Forge API callback
+# (http://localhost:3005/api/v1/user/auth/oidc/callback). After login you can
+# copy `code` from that URL even if byte-forge-auth is not running.
 
 ISSUER="${OIDC_ISSUER:-http://localhost:3010}"
 CLIENT_ID="${OIDC_CLIENT_ID:-byte-forge-web}"
-REDIRECT_URI="${OIDC_REDIRECT_URI:-http://localhost:3000/auth/callback}"
+REDIRECT_URI="${OIDC_REDIRECT_URI:-http://localhost:3005/api/v1/user/auth/oidc/callback}"
 RESOURCE="${OIDC_DEFAULT_RESOURCE:-http://localhost:3005}"
+SCOPE="${OIDC_SCOPE:-openid%20profile%20email%20offline_access}"
 
 VERIFIER="$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')"
 CHALLENGE="$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')"
 STATE="$(openssl rand -hex 8)"
 NONCE="$(openssl rand -hex 8)"
 
-AUTH_URL="${ISSUER}/auth?client_id=${CLIENT_ID}&redirect_uri=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${REDIRECT_URI}'))")&response_type=code&scope=openid%20profile%20email&code_challenge=${CHALLENGE}&code_challenge_method=S256&state=${STATE}&nonce=${NONCE}"
+AUTH_URL="${ISSUER}/auth?client_id=${CLIENT_ID}&redirect_uri=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${REDIRECT_URI}'))")&response_type=code&scope=${SCOPE}&code_challenge=${CHALLENGE}&code_challenge_method=S256&state=${STATE}&nonce=${NONCE}"
 
 cat <<EOF
 1) Open this URL in a browser (log in on auth frontend if prompted):

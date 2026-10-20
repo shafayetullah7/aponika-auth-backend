@@ -40,17 +40,20 @@ import { CreateOAuthClientDto, UpdateOAuthClientDto } from '@/modules/oauth/dto/
 import { OAuthClientService } from '@/modules/oauth/oauth-client.service';
 import { serializeAuditEvent } from '@/modules/audit/audit.serializer';
 
+/** Matches `DEV_OAUTH_CLIENTS` / INTEGRATION — API-owned callback only. */
 const BYTE_FORGE_WEB_EXAMPLE = {
   clientId: 'byte-forge-web',
   name: 'Byte Forge Web',
   description: 'Byte Forge marketplace web app',
   clientType: OAuthClientTypeEnum.PUBLIC,
-  redirectUris: ['http://localhost:3000/auth/callback'],
+  redirectUris: [
+    'http://localhost:3005/api/v1/user/auth/oidc/callback',
+  ],
   postLogoutRedirectUris: ['http://localhost:3000/'],
-  allowedOrigins: ['http://localhost:3000'],
+  allowedOrigins: ['http://localhost:3000', 'http://localhost:3005'],
   grantTypes: ['authorization_code', 'refresh_token'],
   responseTypes: ['code'],
-  scopes: ['openid', 'profile', 'email'],
+  scopes: ['openid', 'profile', 'email', 'offline_access'],
   pkceRequired: true,
 };
 
